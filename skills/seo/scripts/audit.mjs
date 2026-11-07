@@ -48,6 +48,23 @@ if (args.includes("--max") && (!Number.isFinite(maxRaw) || maxRaw < 1)) {
   console.error(`Invalid --max value: ${arg("--max")}. Use a positive number.`);
   process.exit(2);
 }
+if (urlArg) {
+  let parsed = null;
+  try { parsed = new URL(urlArg); }
+  catch { parsed = null; }
+  if (!parsed) {
+    console.error(`Invalid --url value: ${urlArg}. Provide an absolute URL such as https://example.com.`);
+    process.exit(2);
+  }
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+    console.error(`Unsupported URL scheme "${parsed.protocol}" in --url. Only http: and https: are accepted.`);
+    process.exit(2);
+  }
+  if (!parsed.hostname) {
+    console.error(`Invalid --url value: ${urlArg}. A host name is required.`);
+    process.exit(2);
+  }
+}
 
 const results = { generatedAt: new Date().toISOString(), mode: null, pages: [], site: {}, errors: 0, warnings: 0 };
 const titleIndex = new Map();

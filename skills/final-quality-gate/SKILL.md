@@ -34,7 +34,7 @@ cannot return PASS.
 
 1. Run the structural check from the repository root:
    `node skills/final-quality-gate/scripts/gate.mjs --docs ./docs --out docs/quality-gate.json`
-   It reports missing files, empty files, and unresolved markers.
+   It reports missing files, empty templates, and unresolved markers.
 2. Load `checklist.md`. Walk every item in order. Record one of:
    `pass`, `fail`, `manual-required`, `accepted-risk`.
 3. Verify evidence, not prose. For each item, open the referenced report and

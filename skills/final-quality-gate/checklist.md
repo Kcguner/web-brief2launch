@@ -14,7 +14,8 @@
       `docs/monitoring.md` exist.
 - [ ] Every stage in `docs/progress.md` is `done` or `skip` with a reason.
 - [ ] Every stage transition has a recorded approval.
-- [ ] No file is a stub: each has at least one measured result.
+- [ ] No file is a stub: each has at least one measured result. A short but
+      complete report is valid; an empty template with headings only is not.
 
 ## 2. SEO
 

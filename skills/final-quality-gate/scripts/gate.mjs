@@ -78,7 +78,7 @@ const report = {
 };
 
 for (const [file, stage, optionalFor] of required) {
-  const entry = { file, stage, optionalFor: optionalFor || null, exists: false, bytes: 0, lines: 0, findings: [] };
+  const entry = { file, stage, optionalFor: optionalFor || null, exists: false, bytes: 0, lines: 0, proseChars: 0, findings: [] };
   const path = join(docsDir, file);
   try {
     const s = await stat(path);
@@ -87,7 +87,17 @@ for (const [file, stage, optionalFor] of required) {
       const text = await readFile(path, "utf8");
       entry.bytes = Buffer.byteLength(text);
       entry.lines = text.split("\n").length;
-      if (entry.bytes < 200) entry.findings.push("file looks like a stub (<200 bytes)");
+      const prose = text
+        .split("\n")
+        .map((l) => l.trim())
+        .filter((l) => l && !/^#{1,6}\s/.test(l) && !/^[-*+]\s*$/.test(l) && !/^\|?[-:\s|]+\|?$/.test(l))
+        .join(" ")
+        .replace(/\s+/g, " ")
+        .trim();
+      entry.proseChars = prose.length;
+      if (prose.length < 40) {
+        entry.findings.push(`no substantive content (${prose.length} chars outside headings; a short complete report is fine at 40+)`);
+      }
       for (const { re, label } of unresolvedMarkers) {
         const line = text.split("\n").findIndex((l) => re.test(l)) + 1;
         if (line > 0) entry.findings.push(`unresolved marker "${label}" at line ${line}`);

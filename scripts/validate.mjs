@@ -10,8 +10,8 @@
 // leakage, dependency skill names, script health, script risk surface, and the
 // license. Exit 0 when every check passes.
 
-import { readFile, readdir, stat, mkdir, writeFile, rm } from "node:fs/promises";
-import { join, resolve, dirname, relative, extname } from "node:path";
+import { readFile, readdir, stat, mkdir, writeFile, mkdtemp, rm } from "node:fs/promises";
+import { join, resolve, dirname, relative, extname, basename } from "node:path";
 import { fileURLToPath } from "node:url";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
@@ -239,11 +239,13 @@ for (const f of scriptFiles) {
   }
 }
 
-// Mini site fixture.
-const sandbox = join(tmpdir(), "wmskill-validate");
+// Mini site fixture. mkdtemp creates a unique directory we own, so a fixed
+// name can never be removed by a concurrent run or by a user's real folder.
+const sandboxPrefix = join(tmpdir(), "wmskill-validate-");
+let sandbox = null;
 let fixtureNote = "";
 try {
-  await rm(sandbox, { recursive: true, force: true });
+  sandbox = await mkdtemp(sandboxPrefix);
   await mkdir(join(sandbox, "site"), { recursive: true });
   await mkdir(join(sandbox, "docs"), { recursive: true });
   const page = `<!doctype html>
@@ -322,6 +324,21 @@ try { licenseOk = (await stat(licensePath)).isFile(); } catch { licenseOk = fals
 record(9, "LICENSE present", licenseOk, licenseOk ? "LICENSE found" : "LICENSE missing (MIT, Kaan Can Güner expected)");
 
 // ---------------------------------------------------------------- output
+// Remove only the directory mkdtemp created for this run, and only after
+// confirming it still sits under the expected temp prefix.
+async function removeSandbox(dir) {
+  if (!dir) return false;
+  const resolvedDir = resolve(dir);
+  const resolvedPrefix = resolve(sandboxPrefix);
+  // mkdtemp appends its random suffix directly to the prefix, so the parent
+  // must be exactly tmpdir() and the basename must start with the prefix.
+  if (dirname(resolvedDir) !== resolve(tmpdir())) return false;
+  const base = basename(resolvedDir);
+  if (!base.startsWith(basename(resolvedPrefix)) || base.length <= basename(resolvedPrefix).length) return false;
+  try { await rm(resolvedDir, { recursive: true, force: true }); return true; }
+  catch { return false; }
+}
+
 const width = Math.max(...results.map((r) => r.title.length));
 const pad = (s, n) => s + " ".repeat(Math.max(0, n - s.length));
 console.log("");
@@ -332,7 +349,7 @@ console.log("");
 console.log("Details:");
 for (const r of results) console.log(`  ${r.id}. ${r.detail}`);
 if (allowedMentions) console.log(`  note: README/AGENTS.md contain ${allowedMentions} product mentions in the compatibility table — expected.`);
-console.log(`  note: scripts/validate.mjs creates and removes a temp fixture under ${join(tmpdir(), "wmskill-validate")} (self-scan skipped).`);
+console.log(`  note: fixture used a unique temp dir under ${sandboxPrefix} and was removed after the run.`);
 if (risk.length || envHits.length) {
   console.log("");
   console.log("Risk surface (informational, not a failure):");
@@ -349,7 +366,9 @@ if (details.length) {
 }
 const failed = results.filter((r) => r.status === "FAIL").length;
 const passed = results.length - failed;
+const removed = await removeSandbox(sandbox);
 console.log("");
 console.log(`RESULT: ${failed === 0 ? "PASS" : "FAIL"} — ${passed}/${results.length} checks passed, ${failed} failed.`);
 if (verbose) console.log(`Skipped docs/ outputs: ${skippedOutputs.length}`);
+if (!removed && sandbox) console.log(`Temp fixture left in place for inspection: ${sandbox}`);
 process.exit(failed === 0 ? 0 : 1);
