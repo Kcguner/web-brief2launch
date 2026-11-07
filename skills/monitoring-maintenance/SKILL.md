@@ -1,6 +1,6 @@
 ---
 name: monitoring-maintenance
-description: Use when a website has launched and the user needs traffic, error, or uptime tracking, or asks how to plan ongoing upkeep. Sets up analytics, error tracking, uptime checks, and a monthly maintenance calendar, and produces docs/monitoring.md.
+description: Use when the user directly asks for post-launch monitoring, analytics, error tracking, uptime checks, or a maintenance calendar. Produces docs/monitoring.md. For a full website build or redesign, use website-master first.
 ---
 
 # Monitoring & Maintenance

@@ -1,6 +1,6 @@
 ---
 name: legal-compliance
-description: Use when a website collects personal data, uses cookies or analytics, sells to consumers, or needs privacy, cookie, KVKK/GDPR, or terms-of-use pages before launch. Produces a documented legal review package; it is not legal advice.
+description: Use when the user directly asks for legal or compliance work (privacy, cookies, KVKK/GDPR, terms of use). Produces a documented legal review package; it is not legal advice. For a full website build or redesign, use website-master first.
 ---
 
 # Legal & Compliance

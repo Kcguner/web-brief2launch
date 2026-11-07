@@ -1,6 +1,6 @@
 ---
 name: website-intake
-description: Use when a user asks to build, redesign, or relaunch a website and no approved brief exists yet. Turns a vague request into docs/brief.md through a short, grouped question bank with recommended defaults.
+description: Use when the user directly asks for intake or brief creation for a website project and no approved brief exists yet. Turns a vague request into docs/brief.md through a short, grouped question bank with recommended defaults. For general website build or redesign requests, use website-master first.
 ---
 
 # Website Intake

@@ -1,5 +1,87 @@
 # web-brief2launch
 
+## Quick start
+
+One command installs this skill set. The dependency packs install on first use,
+from the fixed list in `skills/website-master/scripts/bootstrap.mjs`, after you
+approve them.
+
+```bash
+npx skills add Kcguner/web-brief2launch
+```
+
+Then open `AGENTS.md` (or your agent's instruction file) and follow the reading
+order there. For agents that do not auto-load skills, point the agent at this
+folder and start with `skills/website-master/SKILL.md`.
+
+### What the bootstrap does
+
+The script ships inside the `website-master` skill folder, because the skills CLI
+installs skill folders and nothing else. On the first website request in a
+project, the agent runs it from that skill folder's `scripts/` directory:
+
+```bash
+node scripts/bootstrap.mjs                      # report only
+node scripts/bootstrap.mjs --yes                # install required, project scope
+node scripts/bootstrap.mjs --yes --global       # only when the user asks for it
+node scripts/bootstrap.mjs --yes --agent opencode   # when detection is ambiguous
+```
+
+- It installs only the packages written in that file. It accepts no package
+  source argument, no URL, and no environment override.
+- Every package is pinned to a full commit SHA, resolved from the upstream tag
+  with `git ls-remote --tags` when the list was written:
+
+  | Package | Tag at pin time | Commit |
+  |---|---|---|
+  | `obra/superpowers` | `v7.0.2` | `22f0b463e7a5e579904dd6211a520321035526f7` |
+  | `addyosmani/agent-skills` | `0.6.15` | `8bfcc1f9916f2eea55494d8c1fa7f4bde867dd9e` |
+  | `pbakaus/impeccable` (optional) | `skill-v4.8.0` | `414603bf14c7a344edb466bb1f85690c77ce8b7d` |
+
+- Scope is project level by default. `--global` installs into the user
+  directory, and only when you ask for it.
+- The target agent is never guessed. One detected agent is used; none or several
+  detected agents stop the install until you pass `--agent <id>`.
+- It installs only the verified skill names listed in the script, one `--skill`
+  argument each. No wildcard.
+- It runs one `npx skills add <repo>@<commit> -a <agent> -y --skill <name> ...`
+  command per missing package, and prints each command before running it.
+- It never edits agent configuration, never installs hooks, and never installs
+  optional packages.
+- If you decline, or there is no network, the workflow continues without the
+  missing skills and records which stages run in limited mode.
+
+#### Updating a pin
+
+1. Resolve the new tag: `git ls-remote --tags https://github.com/<repo>`.
+2. Take the dereferenced commit (`refs/tags/<tag>^{}`) and check the skill
+   folders still exist at that commit.
+3. Update `ref`, `pin`, and `source()` for that package in
+   `skills/website-master/scripts/bootstrap.mjs`.
+4. Update this table and run `node scripts/validate.mjs`.
+
+Manual commands, if you prefer to install everything yourself:
+
+```bash
+# Our skill set (unverified)
+npx skills add Kcguner/web-brief2launch
+
+# Dependency: superpowers (unverified)
+npx skills add obra/superpowers
+
+# Dependency: addyosmani/agent-skills, all 25 skills (unverified)
+npx skills add addyosmani/agent-skills
+
+# Optional dependency: impeccable, design direction and audit (unverified)
+npx impeccable install
+```
+
+`impeccable` is optional. Stage 3 uses it for design direction and the design
+audit. Without it, stage 3 still passes on the manual WCAG 2.1 AA and design
+checklist evidence, and `docs/progress.md` records the fallback. It has its own
+installer, which asks questions and can add agent hooks, so the bootstrap never
+runs it for you.
+
 A portable, harness-independent skill set that takes a website from idea to
 launch and ongoing maintenance. It is plain Markdown: no product-specific tools,
 commands, or integrations. It works in any agent that reads `SKILL.md` files,
@@ -17,11 +99,12 @@ and in agents that do not, through `AGENTS.md`.
 | `skills/legal-compliance/` | Privacy, cookies, KVKK/GDPR, terms — not legal advice |
 | `skills/monitoring-maintenance/` | Analytics, errors, uptime, maintenance calendar |
 | `skills/final-quality-gate/` | Release gate: one PASS/FAIL report from every output |
+| `skills/website-master/scripts/bootstrap.mjs` | Fixed, pinned dependency installer used on first run |
 | `AGENTS.md` | Universal entry point and reading order |
 
 Only six skills are written here. The engineering stages (planning, UI/UX,
 frontend, backend, performance, security, testing, deployment) are delegated to
-two well-maintained external skill packs, referenced by name and repository.
+three well-maintained external skill packs, referenced by name and repository.
 Information architecture and the backend data model use the checklists in
 `skills/website-master/reference.md`. Nothing is copied. This keeps one source
 of truth per skill and avoids drift.
@@ -81,6 +164,12 @@ npx skills add addyosmani/agent-skills            # all 25 skills
 npx skills add addyosmani/agent-skills --skill frontend-ui-engineering
 ```
 
+**impeccable** (design direction, craft floor, design audit and polish):
+
+```bash
+npx impeccable install
+```
+
 Individual skills this set refers to:
 
 | Skill | Repo | Stage |
@@ -93,6 +182,7 @@ Individual skills this set refers to:
 | `requesting-code-review` | obra/superpowers | review between phases |
 | `planning-and-task-breakdown` | addyosmani/agent-skills | 1 Planning |
 | `frontend-ui-engineering` | addyosmani/agent-skills | 3, 4 |
+| `impeccable` | pbakaus/impeccable | 3 UI/UX craft and audit, design polish before release (optional) |
 | `incremental-implementation` | addyosmani/agent-skills | 4 Frontend |
 | `api-and-interface-design` | addyosmani/agent-skills | 5 Backend |
 | `performance-optimization` | addyosmani/agent-skills | 7 Performance |
@@ -166,13 +256,15 @@ VERBİS registration.
 
 ## Acknowledgements
 
-This set stands on two excellent open skill packs and does not copy from them:
+This set stands on three excellent open skill packs and does not copy from them:
 
 - [obra/superpowers](https://github.com/obra/superpowers) — the plan-first,
   subagent-driven development methodology behind Phases 0–2.
 - [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills) — the
   engineering skills for frontend, API, performance, security, testing, CI/CD,
   launch, and observability.
+- [pbakaus/impeccable](https://github.com/pbakaus/impeccable) — the design
+  direction, craft floor, and design audit used in stage 3.
 
 Install them with the commands above; they keep their own licenses and update
 cadence.

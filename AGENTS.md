@@ -47,8 +47,30 @@ instead of duplicating them. Those skills are referenced by name and repository,
 never copied into this repo. See the dependency section of `README.md` for the
 install commands and the verified skill folder names.
 
-If a required dependency skill is missing, tell the user how to install it and
-stop that stage. Do not imitate the missing skill from memory.
+### Bootstrap on first use
+
+The first website request in a project starts with one dependency check:
+
+1. Run `node scripts/bootstrap.mjs` from the `website-master` skill folder's
+   `scripts/` directory. It only reports; it installs nothing.
+2. Show the user the missing packages, the pinned commits, and the exact
+   commands. Ask for approval.
+3. On approval, run the same script with `--yes`. It installs only the fixed list
+   in that file, pinned to the commits written there. It accepts no package
+   source argument.
+4. Project scope is the default. Add `--global` only when the user asks for a
+   user-wide install. Pass `--agent <id>` when the script reports none or several
+   detected agents; never guess one.
+5. On refusal or no network, continue the base flow. Record in `docs/progress.md`
+   which stages run in limited mode and why.
+
+The script never adds agent hooks, never edits agent configuration, and never
+installs the optional `impeccable` package. Optional packages are reported with
+their manual command.
+
+If a required dependency skill is missing and the user does not want to install
+it, tell the user which stage is limited and stop that stage. Do not imitate the
+missing skill from memory.
 
 ## Language rules
 

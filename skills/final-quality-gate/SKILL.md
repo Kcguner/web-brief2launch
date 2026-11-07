@@ -1,6 +1,6 @@
 ---
 name: final-quality-gate
-description: Use when a website is about to go live or the user asks whether a site is ready to publish. Merges every prior stage output into one PASS/FAIL release report at docs/quality-gate.md and blocks release on any critical failure.
+description: Use when the user directly asks for a final release readiness check or quality gate before publishing. Merges every prior stage output into one PASS/FAIL release report at docs/quality-gate.md and blocks release on any critical failure. For a full website build or redesign, use website-master first.
 ---
 
 # Final Quality Gate

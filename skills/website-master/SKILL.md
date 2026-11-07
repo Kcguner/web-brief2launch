@@ -1,6 +1,6 @@
 ---
 name: website-master
-description: Use when the user wants a website built, redesigned, relaunched, audited end-to-end, or asks which stage a website project is in. Orchestrates the 13 stages, delegates to stage skills and external skill packs, tracks progress in docs/progress.md, and enforces stage gates and user approval.
+description: Use when the user asks to build, redesign, relaunch, or audit a website, landing page, portfolio, or web app, in English or Turkish (e.g. "build a website", "create a landing page", "make a portfolio", "build a web app", "redesign my site", "relaunch", "site audit", "web sitesi oluştur", "landing page yap", "portfolyo sitesi", "web uygulaması geliştir", "siteyi yeniden tasarla", "siteyi baştan yap", "site denetimi"). Orchestrates the 13 stages, delegates to stage skills and external skill packs, tracks progress in docs/progress.md, and enforces stage gates and user approval. If the request is only a narrow task (SEO, legal, monitoring, intake, quality gate), use that specific skill instead.
 ---
 
 # Website Master (Orchestrator)
@@ -13,6 +13,46 @@ delegate it and verify the result.
 
 Supporting files: `reference.md` (information-architecture and backend/data
 checklists), `stages.md` (stage-to-skill map and priority rules).
+
+## First run
+
+Before the first stage, run the dependency bootstrap. It is part of the first
+website request, not a separate step for the user.
+
+1. Run `node scripts/bootstrap.mjs` from this skill folder's `scripts/` directory,
+   the folder that holds this `SKILL.md`. It reports only; it installs nothing.
+2. Show the user the missing packages, pinned versions, and commands. Ask for
+   approval.
+3. On approval, run the same script with `--yes`. The script installs only the
+   fixed list inside it, pinned to the commits written there. It accepts no
+   source argument.
+4. Install scope is project level by default. Add `--global` only when the user
+   asks for a user-wide install.
+5. Pass `--agent <id>` when the script reports none or several detected agents.
+   Never guess a target agent.
+6. On refusal or no network, continue the base flow. Record the limited stages
+   and the reason in `docs/progress.md`. Do not imitate a missing skill.
+
+Rules:
+- Never install anything without explicit user approval.
+- Never edit the user's agent configuration or add hooks.
+- `impeccable` is optional. If it is missing, stage 3 runs without its audit and
+  records the fallback evidence; do not block on it.
+- Ask once per project. A second run of the check that finds everything present
+  must not prompt again.
+
+Then, once per project, ask whether to add a standing instruction to the
+project's agent instruction file (AGENTS.md, or the equivalent file the agent
+reads at session start). If approved, append exactly this line and nothing else:
+
+`For website or web app requests, use the website-master skill first.`
+
+Rules:
+- Never modify the instruction file without explicit user approval.
+- If the line is already present (exact or equivalent), do not ask again.
+- If the user declines, continue without the line and do not ask again in the
+  same project.
+- Record the decision in `docs/progress.md` when it exists.
 
 ## Language
 
@@ -36,9 +76,14 @@ Keep code, commands, paths, numbers, and error strings verbatim in any language.
 3. **Weight the stages.** Use the table in `stages.md`. A static portfolio skips
    heavy TDD and backend work; e-commerce keeps security, legal, and testing at
    full weight. Record the chosen depth per stage.
-4. **Check dependency skills.** For each stage, confirm the skill named in
-   `stages.md` is available. Missing: give the user the install command from
-   `../../README.md` and stop that stage. Never substitute an invented workflow.
+4. **Check dependency skills.** Run `scripts/bootstrap.mjs` from this skill
+   folder's `scripts/` directory at the start of the first stage and again when a
+   stage's skill is not found. Missing required package: show the reported
+   command, ask for approval, then run the same script with `--yes`. Project
+   scope is the default; add `--global` only when the user asks for it. Pass
+   `--agent <id>` when the script cannot settle on one agent. Missing optional
+   package: continue, and record the fallback in `docs/progress.md`. Never
+   substitute an invented workflow.
 5. **Load one stage skill.** Open only the file for the current stage. Apply its
    Steps and Checklist.
 6. **Check the gate.** Compare the output against the stage completion criteria
@@ -77,9 +122,10 @@ Rules:
   `docs/handoffs/<phase>-result.md`.
 - A separate reviewer pass checks each phase against `docs/plan.md`.
 - Stage work in order: information architecture (`reference.md`), UI/UX design
-  → external `frontend-ui-engineering`, frontend build → external
-  `frontend-ui-engineering` and `incremental-implementation`, backend and data
-  → external `api-and-interface-design` plus `reference.md`.
+  → external `frontend-ui-engineering` for the screen and token contract, with
+  external `impeccable` for design direction and the `audit` pass, frontend build
+  → external `frontend-ui-engineering` and `incremental-implementation`, backend
+  and data → external `api-and-interface-design` plus `reference.md`.
   SEO, hardening, and testing run in their own phases below.
 
 ### Phase 3 — Hardening

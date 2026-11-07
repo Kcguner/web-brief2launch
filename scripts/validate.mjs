@@ -12,7 +12,7 @@
 
 import { readFile, readdir, stat, mkdir, writeFile, mkdtemp, rm } from "node:fs/promises";
 import { join, resolve, dirname, relative, extname, basename } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { tmpdir } from "node:os";
@@ -64,6 +64,8 @@ const VERIFIED = {
     "security-and-hardening", "shipping-and-launch", "source-driven-development",
     "spec-driven-development", "test-driven-development", "using-agent-skills",
   ],
+  // Folder name read from the upstream tree on 2026-11-08.
+  "pbakaus/impeccable": ["impeccable"],
 };
 const VERIFIED_ALL = new Set(Object.values(VERIFIED).flat());
 
@@ -109,6 +111,7 @@ const skillDirs = (await readdir(join(root, "skills"), { withFileTypes: true }))
 const longFiles = [];
 const fmProblems = [];
 const sectionProblems = [];
+const firstRunProblems = [];
 const REQUIRED_SECTIONS = ["Purpose", "Inputs", "Steps", "Checklist", "Completion criteria", "Output", "On failure"];
 
 for (const dir of skillDirs) {
@@ -129,14 +132,19 @@ for (const dir of skillDirs) {
   if (name !== dir) fmProblems.push(`${dir}: name "${name}" != folder`);
   if (!desc) fmProblems.push(`${dir}: description missing`);
   else if (!/^use when\b/i.test(desc)) fmProblems.push(`${dir}: description does not start with "Use when"`);
+  else if (desc.length > 1024) fmProblems.push(`${dir}: description too long (${desc.length} > 1024)`);
 
   const missing = REQUIRED_SECTIONS.filter((s) => !new RegExp(`^##\\s+${s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*$`, "mi").test(text));
   if (missing.length) sectionProblems.push(`${dir}: missing ${missing.join(", ")}`);
 }
 
+const wmText = await read(join(root, "skills", "website-master", "SKILL.md"));
+if (!wmText || !/^##\s+First run\s*$/mi.test(wmText)) firstRunProblems.push("website-master: missing 'First run' section");
+
 record(1, "SKILL.md <= 200 lines", longFiles.length === 0, longFiles.join("; ") || `${skillDirs.length} files checked`, "FAIL");
 record(2, "frontmatter valid, name = folder, description starts with \"Use when\"", fmProblems.length === 0, fmProblems.join("; ") || `${skillDirs.length} files checked`);
 record(3, "required sections present", sectionProblems.length === 0, sectionProblems.join("; ") || `${REQUIRED_SECTIONS.length} sections x ${skillDirs.length} files`);
+record(10, "website-master has a 'First run' section", firstRunProblems.length === 0, firstRunProblems.join("; ") || "present");
 
 // ---------------------------------------------------------------- 4 links
 const linkProblems = [];
@@ -180,10 +188,14 @@ async function scanTerms(dir, filter) {
   }
   return hits;
 }
-const skillHits = await scanTerms(join(root, "skills"), (p) => p.endsWith(".md") || p.endsWith(".mjs"));
+const skillHits = await scanTerms(join(root, "skills"), (p) => p.endsWith(".md"));
+const scriptHits = await scanTerms(join(root, "skills"), (p) => p.endsWith(".mjs"));
 const docHits = (await scanTerms(root, (p) => p.endsWith(".md") && !p.includes(`${join("skills")}`)))
   .filter((h) => !h.startsWith("README.md") && !h.startsWith("AGENTS.md"));
-record(5, "no product-specific terms under skills/", skillHits.length === 0, skillHits.join(" | ") || "clean");
+record(5, "no product-specific terms under skills/", skillHits.length === 0,
+  skillHits.join(" | ") || (scriptHits.length
+    ? `clean; ${scriptHits.length} agent-directory mention(s) in skill scripts, expected for the bootstrap`
+    : "clean"));
 if (skillHits.length) details.push(...skillHits.slice(0, 10).map((h) => `5. term: ${h}`));
 
 // README / AGENTS.md mentions are expected (compatibility table), reported apart.
@@ -322,6 +334,69 @@ const licensePath = join(root, "LICENSE");
 let licenseOk = false;
 try { licenseOk = (await stat(licensePath)).isFile(); } catch { licenseOk = false; }
 record(9, "LICENSE present", licenseOk, licenseOk ? "LICENSE found" : "LICENSE missing (MIT, Kaan Can Güner expected)");
+
+// ---------------------------------------------------------------- 11 bootstrap
+const bootstrapProblems = [];
+const bootstrapPath = join(root, "skills", "website-master", "scripts", "bootstrap.mjs");
+let bootstrapText = "";
+try { bootstrapText = await read(bootstrapPath); } catch { bootstrapText = ""; }
+if (!bootstrapText) bootstrapProblems.push("skills/website-master/scripts/bootstrap.mjs missing");
+else {
+  // No option may carry a package source, and the install path needs --yes.
+  for (const banned of ["--source", "--url", "--repo", "--from"]) {
+    if (bootstrapText.includes(`"${banned}"`)) bootstrapProblems.push(`accepts ${banned}, which could retarget a package`);
+  }
+  if (!/flags\.has\("--yes"\)/.test(bootstrapText)) bootstrapProblems.push("no --yes approval gate");
+  if (!/if \(!flags\.has\("--yes"\)\) return 1;/.test(bootstrapText)) bootstrapProblems.push("missing required packages do not stop without --yes");
+
+  // Scope: project is the default, -g only behind --global.
+  if (!/flags\.has\("--global"\) \? "global" : "project"/.test(bootstrapText)) bootstrapProblems.push("scope default is not project with an opt-in --global");
+  if (!/if \(scope === "global"\) args\.push\("-g"\);/.test(bootstrapText)) bootstrapProblems.push("-g is not gated behind the --global opt-in");
+
+  // Agent: never guessed.
+  if (!/--agent/.test(bootstrapText)) bootstrapProblems.push("no --agent option");
+  if (!/state\.detected\.length === 1 \? state\.detected\[0\] : null/.test(bootstrapText)) bootstrapProblems.push("agent is chosen without requiring a single detection");
+  if (!/if \(blocked\) return 2;/.test(bootstrapText)) bootstrapProblems.push("ambiguous or missing agent does not stop the install");
+
+  // Skills: explicit names only.
+  if (/--skill["'],\s*["']\*/.test(bootstrapText)) bootstrapProblems.push("installs with a --skill wildcard");
+  if (!/for \(const skill of pkg\.skills\) args\.push\("--skill", skill\);/.test(bootstrapText)) bootstrapProblems.push("skill names are not passed one by one");
+
+  // The skill text must describe the script relatively, with no harness path.
+  const wmSkillText = (await read(join(root, "skills", "website-master", "SKILL.md"))) || "";
+  if (/<[a-z-]*skill-dir>/.test(wmSkillText)) bootstrapProblems.push("website-master SKILL.md contains a placeholder absolute skill path");
+  if (!/skill folder's `scripts\/` directory/.test(wmSkillText)) bootstrapProblems.push("website-master SKILL.md does not describe the script path relative to the skill folder");
+
+  try {
+    const mod = await import(pathToFileURL(bootstrapPath).href);
+    const list = mod.PACKAGES;
+    if (!Array.isArray(list) || list.length === 0) bootstrapProblems.push("PACKAGES list missing or empty");
+    else {
+      const seen = new Set();
+      for (const pkg of list) {
+        const label = pkg.id ?? "(no id)";
+        if (!["required", "optional"].includes(pkg.kind)) bootstrapProblems.push(`${label}: kind must be required or optional`);
+        if (!VERIFIED[pkg.repo]) bootstrapProblems.push(`${label}: repo ${pkg.repo} is not a verified upstream repo`);
+        if (!/^[0-9a-f]{40}$/.test(String(pkg.pin))) bootstrapProblems.push(`${label}: pin "${pkg.pin}" is not a full 40-character commit SHA`);
+        if (!pkg.ref) bootstrapProblems.push(`${label}: no tag in ref`);
+        if (!readmeText.includes(pkg.pin)) bootstrapProblems.push(`${label}: pin not documented in README`);
+        if (!readmeText.includes(pkg.ref)) bootstrapProblems.push(`${label}: tag ${pkg.ref} not documented in README`);
+        if (typeof pkg.source !== "function") bootstrapProblems.push(`${label}: no source()`);
+        else if (pkg.source() !== `${pkg.repo}@${pkg.pin}`) bootstrapProblems.push(`${label}: source() must be repo@pin`);
+        for (const skill of pkg.skills ?? []) {
+          const known = (VERIFIED[pkg.repo] ?? []).includes(skill);
+          if (!known && !LOCAL_SKILLS.includes(skill)) bootstrapProblems.push(`${label}: skill "${skill}" not in ${pkg.repo}`);
+        }
+        if (seen.has(pkg.id)) bootstrapProblems.push(`duplicate package id ${label}`);
+        seen.add(pkg.id);
+      }
+    }
+  } catch (e) {
+    bootstrapProblems.push(`import failed: ${e.message}`);
+  }
+}
+record(11, "bootstrap installs only a fixed, pinned, approved list", bootstrapProblems.length === 0,
+  bootstrapProblems.join("; ") || "commit pins, --yes gate, project scope default, explicit agent, explicit skill names, relative path");
 
 // ---------------------------------------------------------------- output
 // Remove only the directory mkdtemp created for this run, and only after

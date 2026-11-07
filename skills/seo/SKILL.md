@@ -1,6 +1,6 @@
 ---
 name: seo
-description: Use when the user wants to audit or improve a website's SEO, fix indexing or metadata problems, add structured data, or prepare a site for launch. Covers titles, meta, heading hierarchy, sitemap, robots, canonical, Schema.org, Open Graph, and Twitter Cards.
+description: Use when the user directly asks for an SEO audit or SEO improvements (titles, meta, sitemap, robots, canonical, Schema.org, Open Graph, Twitter Cards). For a full website build or redesign, use website-master first.
 ---
 
 # SEO
