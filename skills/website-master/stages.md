@@ -1,6 +1,9 @@
 # Stage map — 13 stages
 
-Read alongside `SKILL.md`. Each stage names its skill, its depth by project type,
+Read alongside `SKILL.md`. Routine stages auto-advance on a passing gate; the
+orchestrator pauses only for the decision points listed in `SKILL.md` step 7
+(missing dependency, brief/plan, scope change, double gate failure, irreversible
+action, legal sign-off, release). Each stage names its skill, its depth by project type,
 its output, and its gate. "ext:" means an external dependency skill; install it
 from the commands in `../../README.md` or let `scripts/bootstrap.mjs` do it.
 "optional ext:" never blocks a stage: when it is missing, the stage records the
@@ -10,7 +13,7 @@ fallback evidence in `docs/progress.md`.
 |---|-------|----------------------------|--------|-------------------|
 | 0 | Intake & discovery | `../website-intake/SKILL.md` + ext: `brainstorming` | `docs/brief.md` | Brief approved by user |
 | 1 | Planning & analysis | ext: `writing-plans`, `planning-and-task-breakdown` | `docs/plan.md` | Every task has owner role, files, and a verifiable criterion |
-| 2 | Information architecture | `reference.md` §IA | `docs/ia.md` | Sitemap, nav model, URL scheme, hierarchy approved |
+| 2 | Information architecture | `reference.md` §IA | `docs/ia.md` | Sitemap, nav model, URL scheme, and hierarchy recorded and consistent with the approved brief |
 | 3 | UI/UX design | ext: `frontend-ui-engineering` + optional ext: `impeccable` | `docs/design.md` + `DESIGN.md` tokens | Responsive breakpoints defined; WCAG 2.1 AA contrast and focus states; every screen in the flow designed; when `impeccable` is installed, its `audit` runs and findings are resolved or recorded, otherwise the manual accessibility and design checklist evidence is recorded |
 | 4 | Frontend development | ext: `frontend-ui-engineering`, `incremental-implementation` | working app | Build passes; component inventory matches design; no console errors on primary routes |
 | 5 | Backend & data | ext: `api-and-interface-design` + `reference.md` §Backend | `docs/data-model.md` | Schema, auth, secrets, migrations, and backup plan documented and exercised |

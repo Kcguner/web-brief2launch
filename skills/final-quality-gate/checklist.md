@@ -13,7 +13,9 @@
 - [ ] `docs/legal-review.md`, `docs/test-report.md`, `docs/deployment.md`,
       `docs/monitoring.md` exist.
 - [ ] Every stage in `docs/progress.md` is `done` or `skip` with a reason.
-- [ ] Every stage transition has a recorded approval.
+- [ ] Every important decision (brief, plan, scope change, irreversible action,
+      legal sign-off, release) has a recorded approval; routine stages are logged
+      as auto-advanced in `docs/progress.md`.
 - [ ] No file is a stub: each has at least one measured result. A short but
       complete report is valid; an empty template with headings only is not.
 

@@ -1,6 +1,6 @@
 ---
 name: website-master
-description: Use when the user asks to build, redesign, relaunch, or audit a website, landing page, portfolio, or web app, in English or Turkish (e.g. "build a website", "create a landing page", "make a portfolio", "build a web app", "redesign my site", "relaunch", "site audit", "web sitesi oluştur", "landing page yap", "portfolyo sitesi", "web uygulaması geliştir", "siteyi yeniden tasarla", "siteyi baştan yap", "site denetimi"). Orchestrates the 13 stages, delegates to stage skills and external skill packs, tracks progress in docs/progress.md, and enforces stage gates and user approval. If the request is only a narrow task (SEO, legal, monitoring, intake, quality gate), use that specific skill instead.
+description: Use when the user asks to build, redesign, relaunch, or audit a website, landing page, portfolio, or web app, in English or Turkish (e.g. "build a website", "create a landing page", "make a portfolio", "build a web app", "redesign my site", "relaunch", "site audit", "web sitesi oluştur", "landing page yap", "portfolyo sitesi", "web uygulaması geliştir", "siteyi yeniden tasarla", "siteyi baştan yap", "site denetimi"). Orchestrates the 13 stages, delegates to stage skills and external skill packs, tracks progress in docs/progress.md, and enforces stage gates and approval at decision points. If the request is only a narrow task (SEO, legal, monitoring, intake, quality gate), use that specific skill instead.
 ---
 
 # Website Master (Orchestrator)
@@ -88,10 +88,17 @@ Keep code, commands, paths, numbers, and error strings verbatim in any language.
    Steps and Checklist.
 6. **Check the gate.** Compare the output against the stage completion criteria
    in `stages.md`. Failing gate: fix and retest. Do not advance.
-7. **Ask for approval** at every stage transition. Present: what was done, the
-   evidence, what is next, and the risk of continuing.
+7. **Auto-advance on a passing gate.** Once the gate passes, record progress and
+   move to the next stage without pausing. Pause and ask the user
+   only for an important decision: a missing dependency skill (install approval),
+   the brief and the plan in Phase 0-1, a scope change that contradicts the
+   approved brief, a gate that fails twice in a row, an irreversible or
+   destructive action (deploy, DNS change, data migration, secret rotation), legal
+   or counsel sign-off, and the final release approval. For each pause, present:
+   what was done, the evidence, what is next, and the risk of continuing.
 8. **Record progress** in `docs/progress.md` after each stage: stage, status,
-   evidence path, date, open issues.
+   evidence path, date, open issues, and whether the stage auto-advanced or
+   paused for a decision.
 9. **Run the release gate** with `../final-quality-gate/SKILL.md` before any
    publish. Release needs a PASS plus explicit user approval.
 10. **Hand off to maintenance** with `../monitoring-maintenance/SKILL.md` after
@@ -159,7 +166,9 @@ calendar exist and are owned.
 - [ ] Project type and per-stage depth recorded in `docs/progress.md`.
 - [ ] Dependency skills confirmed present, or the user got install commands.
 - [ ] Only one stage skill loaded at a time (except approved parallel phases).
-- [ ] Every stage transition had explicit user approval.
+- [ ] Every important decision (brief, plan, scope change, irreversible action,
+      legal sign-off, release) had explicit user approval; routine stages
+      auto-advanced and are logged in `docs/progress.md`.
 - [ ] `docs/progress.md` updated after each stage.
 - [ ] `docs/plan.md` tasks each have an owner role and a measurable criterion.
 - [ ] Handoff files exist for each delegated phase.

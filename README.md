@@ -201,7 +201,10 @@ Re-check after upgrading a dependency pack; skill names can change.
 2. The agent reads `skills/website-master/SKILL.md`, which starts at intake.
 3. Answer the grouped questions. Approve `docs/brief.md`.
 4. Review `docs/plan.md`. Approve it.
-5. Work through the stages. Each transition needs your approval.
+5. Work through the stages. Routine stages auto-advance on a passing gate; the
+   agent pauses only for decision points (missing dependency, brief and plan,
+   scope change, a gate that fails twice, irreversible actions, legal sign-off,
+   release).
 6. Before release, the agent runs `skills/final-quality-gate/SKILL.md` and shows
    one PASS/FAIL report.
 7. After launch, `skills/monitoring-maintenance/SKILL.md` sets up monitoring.
