@@ -43,14 +43,14 @@ and how consent is obtained.
 - How to change or withdraw consent.
 - Statement that non-essential cookies load only after opt-in.
 
-## KVKK aydınlatma metni contents
+## KVKK disclosure notice (aydınlatma metni) contents
 
-- Veri sorumlusu identity and contact.
-- Kişisel verilerin işlenme amacı.
-- Hukuki sebep (KVKK m.5/6).
-- Alıcı grupları ve aktarım.
-- Saklama süresi.
-- KVKK m.11 hakları ve başvuru yolu.
+- Data controller (veri sorumlusu) identity and contact.
+- Purpose of processing personal data (kişisel verilerin işlenme amacı).
+- Legal basis (hukuki sebep, KVKK art. 5/6).
+- Recipient groups and transfers (alıcı grupları ve aktarım).
+- Retention period (saklama süresi).
+- Data-subject rights (KVKK art. 11 hakları) and the application route.
 - VERBİS note when registration applies.
 
 ## Terms of use contents

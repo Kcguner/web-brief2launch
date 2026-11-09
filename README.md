@@ -1,5 +1,13 @@
 # web-brief2launch
 
+A portable, harness-independent skill set that takes a website from idea to
+launch and ongoing maintenance. It is Markdown skills plus optional Node.js
+(>= 18) helper scripts: no product-specific tools, commands, or integrations. It
+works in any agent that reads `SKILL.md` files, and in agents that do not,
+through `AGENTS.md`.
+
+**Version:** 0.1.0
+
 ## Quick start
 
 One command installs this skill set. The dependency packs install on first use,
@@ -14,22 +22,34 @@ npx skills add Kcguner/web-brief2launch --skill '*'
 and leave a partial install. The CLI asks which agent to target; add
 `-a <agent>` to skip that prompt (ids are in the compatibility table).
 
+Cloning is the only install that also brings `AGENTS.md`, because the skills CLI
+installs skill folders and nothing else. A CLI install starts from
+`skills/website-master/SKILL.md` instead.
+
+```bash
+git clone https://github.com/Kcguner/web-brief2launch.git
+```
+
 Then open `AGENTS.md` (or your agent's instruction file) and follow the reading
 order there. For agents that do not auto-load skills, point the agent at this
 folder and start with `skills/website-master/SKILL.md`.
 
 ### What the bootstrap does
 
-The script ships inside the `website-master` skill folder, because the skills CLI
-installs skill folders and nothing else. On the first website request in a
-project, the agent runs it from that skill folder's `scripts/` directory:
+The script ships inside the `website-master` skill folder. On the first website
+request in a project, the agent runs it from the user's project so that the
+working directory decides the install scope:
 
 ```bash
-node scripts/bootstrap.mjs                      # report only
-node scripts/bootstrap.mjs --yes                # install required, project scope
-node scripts/bootstrap.mjs --yes --global       # only when the user asks for it
-node scripts/bootstrap.mjs --yes --agent opencode   # when detection is ambiguous
+node <skill-folder>/scripts/bootstrap.mjs                      # report only
+node <skill-folder>/scripts/bootstrap.mjs --yes                # install required, project scope
+node <skill-folder>/scripts/bootstrap.mjs --yes --global       # only when the user asks for it
+node <skill-folder>/scripts/bootstrap.mjs --yes --agent opencode   # when detection is ambiguous
 ```
+
+Installed skills live under `.agents/skills/<name>/`, so `<skill-folder>` is
+`.agents/skills/website-master` for a project install, or `~/.config/opencode/skills/website-master`
+and similar for a global install.
 
 - It installs only the packages written in that file. It accepts no package
   source argument, no URL, and no environment override.
@@ -70,17 +90,18 @@ node scripts/bootstrap.mjs --yes --agent opencode   # when detection is ambiguou
    `skills/website-master/scripts/bootstrap.mjs`.
 4. Update this table and run `node scripts/validate.mjs`.
 
-Manual commands, if you prefer to install everything yourself:
+Manual commands, if you prefer to install everything yourself. The dependency
+commands carry the same pins as the table above:
 
 ```bash
 # Our skill set, all six skills (not install-tested)
 npx skills add Kcguner/web-brief2launch --skill '*'
 
 # Dependency: superpowers, all skills (not install-tested)
-npx skills add obra/superpowers --skill '*'
+npx skills add obra/superpowers@22f0b463e7a5e579904dd6211a520321035526f7 --skill '*'
 
 # Dependency: addyosmani/agent-skills, all skills (not install-tested)
-npx skills add addyosmani/agent-skills --skill '*'
+npx skills add addyosmani/agent-skills@8bfcc1f9916f2eea55494d8c1fa7f4bde867dd9e --skill '*'
 
 # Optional dependency: impeccable, design direction and audit (not install-tested)
 npx impeccable install
@@ -92,25 +113,23 @@ checklist evidence, and `docs/progress.md` records the fallback. It has its own
 installer, which asks questions and can add agent hooks, so the bootstrap never
 runs it for you.
 
-A portable, harness-independent skill set that takes a website from idea to
-launch and ongoing maintenance. It is plain Markdown: no product-specific tools,
-commands, or integrations. It works in any agent that reads `SKILL.md` files,
-and in agents that do not, through `AGENTS.md`.
-
-**Version:** 0.1.0
-
 ## What it contains
 
 | Path | Role |
 |------|------|
 | `skills/website-master/` | Orchestrator: 13-stage flow, gates, approvals, progress file |
+| `skills/website-master/stages.md` | Stage map, phase map, `docs/progress.md` format |
+| `skills/website-master/reference.md` | Stage checklists for IA and backend/data |
 | `skills/website-intake/` | Question bank that produces `docs/brief.md` |
 | `skills/seo/` | Technical and on-page SEO, structured data, plus an audit script |
 | `skills/legal-compliance/` | Privacy, cookies, KVKK/GDPR, terms — not legal advice |
 | `skills/monitoring-maintenance/` | Analytics, errors, uptime, maintenance calendar |
 | `skills/final-quality-gate/` | Release gate: one PASS/FAIL report from every output |
+| `skills/*/checklist.md` | Full per-skill checklists, loaded on demand |
 | `skills/website-master/scripts/bootstrap.mjs` | Fixed, pinned dependency installer used on first run |
-| `AGENTS.md` | Universal entry point and reading order |
+| `scripts/validate.mjs` | Repository self-check: frontmatter, line limits, links |
+| `docs/trigger-tests.md` | Manual prompts that test skill auto-selection |
+| `AGENTS.md` | Universal entry point and reading order (clone or manual install only) |
 
 Only six skills are written here. The engineering stages (planning, UI/UX,
 frontend, backend, performance, security, testing, deployment) are delegated to
@@ -119,28 +138,11 @@ Information architecture and the backend data model use the checklists in
 `skills/website-master/reference.md`. Nothing is copied. This keeps one source
 of truth per skill and avoids drift.
 
-## Install
+## Dependency skill packs
 
-### 1. This skill set
-
-The [skills CLI](https://github.com/vercel-labs/skills) installs into many
-agents:
-
-```bash
-npx skills add Kcguner/web-brief2launch --skill '*'
-```
-
-Or clone and point your agent at the folder:
-
-```bash
-git clone https://github.com/Kcguner/web-brief2launch.git
-```
-
-Then install the `skills/*` folders with whatever mechanism your agent supports
-for local skills, or copy them into the agent's skill directory (see the
-compatibility table).
-
-### 2. Dependency skill packs
+These commands are unpinned convenience paths, so they drift from the commit
+pins above. Use the bootstrap, or the pinned manual commands under Quick start,
+when you need the exact commits recorded in the table.
 
 **superpowers** (planning, brainstorming, delegation, TDD, code review):
 
@@ -173,6 +175,7 @@ testing, CI/CD, launch, observability):
 npx skills add addyosmani/agent-skills            # all 25 skills
 npx skills add addyosmani/agent-skills --skill frontend-ui-engineering
 ```
+
 
 **impeccable** (design direction, craft floor, design audit and polish):
 

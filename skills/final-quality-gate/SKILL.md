@@ -17,7 +17,9 @@ Supporting files: `checklist.md` (full release checklist).
 
 ## Inputs
 
-Required files, from `../website-master/stages.md`:
+Required files: the stage outputs listed in `../website-master/stages.md`, plus
+the orchestrator's `docs/progress.md`. `docs/quality-gate.json` is this gate's
+own machine-readable output, not an input.
 
 - `docs/brief.md`, `docs/plan.md`, `docs/progress.md`
 - `docs/ia.md`, `docs/design.md`, `docs/data-model.md`
@@ -27,14 +29,22 @@ Required files, from `../website-master/stages.md`:
   `docs/monitoring.md`
 
 Other inputs: the staging or production URL, deploy access, and a runnable
-terminal. Without a capability, the gate marks the item `manual-required` and
-cannot return PASS.
+terminal. A missing capability alone downgrades the affected rows to
+`manual-required`; it is not a FAIL by itself.
+
+The gate does not parse the `## Open questions` section of `docs/brief.md`.
+Every item there must still be resolved or accepted in writing before release.
 
 ## Steps
 
-1. Run the structural check from the repository root:
-   `node skills/final-quality-gate/scripts/gate.mjs --docs ./docs --out docs/quality-gate.json`
-   It reports missing files, empty templates, and unresolved markers.
+1. Run the structural check from the user's project with
+   `node <skill-folder>/scripts/gate.mjs --docs ./docs --out docs/quality-gate.json`.
+   Installed skills live under `.agents/skills/<name>/`, so `<skill-folder>` is
+   `.agents/skills/final-quality-gate` (or this folder in a clone). It reports
+   missing files, empty templates, and unresolved markers. Exit codes: `1`
+   structural FAIL; `2` usage or write error; `3` structural PASS but the
+   release verdict is still pending — continue with the checklist below before
+   publishing.
 2. Load `checklist.md`. Walk every item in order. Record one of:
    `pass`, `fail`, `manual-required`, `accepted-risk`.
 3. Verify evidence, not prose. For each item, open the referenced report and
@@ -51,8 +61,11 @@ cannot return PASS.
    time-out; IA lists pages that do not exist.
 7. Score the outcome:
    - **PASS**: zero `fail`, and every `manual-required` was completed by the
-     user with evidence, and every `accepted-risk` has a written acceptance.
-   - **FAIL**: one or more `fail`, or an unresolved `manual-required`.
+     user with recorded evidence, and every `accepted-risk` has a written
+     acceptance. Either machine evidence or recorded user confirmation is
+     enough for a row.
+   - **FAIL**: one or more `fail`, or a `manual-required` row with no user
+     confirmation.
 8. Write `docs/quality-gate.md` in the user's language. Lead with the verdict,
    then the blocker list, then the full table, then accepted risks, then manual
    steps still open.

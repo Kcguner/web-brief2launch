@@ -121,7 +121,8 @@ brainstorming for open-ended exploration of goals and trade-offs.
 ## Completion criteria
 
 - `docs/brief.md` exists and contains every section of the template.
-- No section contains the literal placeholder `TBD` without an owner and a date.
+- No section contains the literal placeholder `TBD`. Unresolved items go in the
+  `## Open questions` section as `- question — asked YYYY-MM-DD — owner`.
 - Project type, primary goal, primary action, launch scope, stack constraint,
   jurisdiction, and maintenance owner are all answered.
 - The user has approved the brief. Without approval, Phase 1 must not start.

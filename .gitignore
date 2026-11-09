@@ -3,4 +3,14 @@ node_modules/
 *.log
 .env
 .env.*
-docs/
+
+# Generated outputs from the website workflow. Inputs stay tracked.
+docs/brief.md
+docs/progress.md
+docs/ia.md
+docs/design.md
+docs/data-model.md
+docs/deployment.md
+docs/handoffs/
+docs/quality-gate.json
+docs/seo-audit.json

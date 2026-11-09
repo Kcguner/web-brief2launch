@@ -1,9 +1,9 @@
 # Website Development Skill Set — universal entry
 
 This repository contains a portable skill set for taking a website from idea to
-launch and ongoing maintenance. Every skill is a plain `SKILL.md` file under
-`skills/<name>/`. Nothing here depends on a specific agent product, command
-syntax, or integration protocol.
+launch and ongoing maintenance. It is Markdown skills plus optional Node.js
+(>= 18) helper scripts under `skills/<name>/`. Nothing here depends on a
+specific agent product, command syntax, or integration protocol.
 
 ## What is inside
 
@@ -22,6 +22,8 @@ syntax, or integration protocol.
 1. Read `skills/website-master/SKILL.md` first. It decides the current stage and
    names the skill file for that stage.
 2. Open only the skill file for the current stage. Do not preload the whole set.
+   If `stages.md` names no skill file for a stage, follow that row's reference
+   instead: a `reference.md` section or an external skill.
 3. Follow that skill's Steps and Checklist. Write the output file it names.
 4. Return to `website-master` and check the stage completion criteria before
    moving on.
@@ -51,8 +53,9 @@ install commands and the verified skill folder names.
 
 The first website request in a project starts with one dependency check:
 
-1. Run `node scripts/bootstrap.mjs` from the `website-master` skill folder's
-   `scripts/` directory. It only reports; it installs nothing.
+1. Run `node <skill-folder>/scripts/bootstrap.mjs` with the working directory set
+   to the target project; cwd determines install scope. It only reports; it
+   installs nothing.
 2. Show the user the missing packages, the pinned commits, and the exact
    commands. Ask for approval.
 3. On approval, run the same script with `--yes`. It installs only the fixed list
@@ -63,6 +66,15 @@ The first website request in a project starts with one dependency check:
    detected agents; never guess one.
 5. On refusal or no network, continue the base flow. Record in `docs/progress.md`
    which stages run in limited mode and why.
+6. Once per project, ask whether to add this line to the project's agent
+   instruction file:
+   `For website or web app requests, use the website-master skill first.`
+   Never edit that file without approval; record the answer.
+
+Exit codes: `0` all required packages present; `1` missing packages reported (or
+an install failed); `2` an install was requested but the target agent is
+ambiguous, so pass `--agent <id>` (report-only mode prints the detected list and
+exits `0`); `64` usage error.
 
 The script never adds agent hooks, never edits agent configuration, and never
 installs the optional `impeccable` package. Optional packages are reported with

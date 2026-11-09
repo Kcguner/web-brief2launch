@@ -18,10 +18,11 @@
 //     never installs the optional package.
 
 import { spawn } from "node:child_process";
+import { realpathSync } from "node:fs";
 import { access } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath } from "node:url";
 
 // Fixed list. Do not derive from input.
 // Pins were resolved from `git ls-remote --tags` on 2026-11-08:
@@ -40,7 +41,6 @@ export const PACKAGES = [
       "dispatching-parallel-agents", "test-driven-development",
       "requesting-code-review",
     ],
-    source: () => "obra/superpowers@22f0b463e7a5e579904dd6211a520321035526f7",
   },
   {
     id: "addyosmani",
@@ -55,7 +55,6 @@ export const PACKAGES = [
       "ci-cd-and-automation", "shipping-and-launch",
       "observability-and-instrumentation", "planning-and-task-breakdown",
     ],
-    source: () => "addyosmani/agent-skills@8bfcc1f9916f2eea55494d8c1fa7f4bde867dd9e",
   },
   {
     id: "impeccable",
@@ -69,9 +68,14 @@ export const PACKAGES = [
     manual: "npx impeccable install",
     reason:
       "design direction and the stage 3 design audit; stage 3 also passes without it",
-    source: () => "pbakaus/impeccable@414603bf14c7a344edb466bb1f85690c77ce8b7d",
   },
 ];
+
+// Install source is always repo@pin, derived in one place so a package entry
+// cannot drift from its pin.
+function packageSource(pkg) {
+  return `${pkg.repo}@${pkg.pin}`;
+}
 
 // Agent skill directories and detection markers come from the skills CLI
 // supported-agents table (checked 2026-11-10). Several agents share the
@@ -89,6 +93,9 @@ const AGENTS = [
 ];
 const AGENT_IDS = AGENTS.map((a) => a.id);
 
+// A usage error exits 64 without printing a stack trace.
+class UsageError extends Error {}
+
 async function exists(path) {
   try {
     await access(path);
@@ -98,8 +105,19 @@ async function exists(path) {
   }
 }
 
+// The skills CLI runs from npx, so its own version is pinned too: an unpinned
+// CLI could change its arguments between runs. Checked with
+// `npm view skills version` on 2026-11-10.
+const SKILLS_CLI_VERSION = "1.7.6";
+const INSTALL_TIMEOUT_MS = 300_000;
+
 async function hasSkill(dir, name) {
   return exists(join(dir, name, "SKILL.md"));
+}
+
+// Project scope writes into cwd, so cwd must actually be a project root.
+async function hasProjectMarker() {
+  return (await exists(join(process.cwd(), ".git"))) || (await exists(join(process.cwd(), "package.json")));
 }
 
 function parseArgs(argv) {
@@ -124,7 +142,7 @@ function parseArgs(argv) {
 function fail(message) {
   console.error(message);
   console.error("Accepted options: --check, --yes, --json, --global, --agent <id>, --help. No package source is accepted.");
-  process.exit(64);
+  throw new UsageError(message);
 }
 
 function expandPath(path) {
@@ -132,16 +150,15 @@ function expandPath(path) {
 }
 
 async function detectAgents() {
-  const found = [];
+  const local = [];
+  const global = [];
   for (const agent of AGENTS) {
-    for (const marker of agent.markers) {
-      if (await exists(expandPath(marker))) {
-        found.push(agent.id);
-        break;
-      }
-    }
+    if (await exists(join(process.cwd(), agent.markers[0]))) local.push(agent.id);
+    else if (agent.markers[1] && await exists(expandPath(agent.markers[1]))) global.push(agent.id);
   }
-  return found;
+  // In-project markers win: a home-directory config says the agent exists on
+  // this machine, not that the user works in this project with it.
+  return { detected: local.length > 0 ? local : global, local, global };
 }
 
 async function findInstalled(name, scope, agentId = null) {
@@ -156,16 +173,34 @@ async function findInstalled(name, scope, agentId = null) {
   return hits;
 }
 
-function run(command, args) {
+function run(command, args, timeoutMs = INSTALL_TIMEOUT_MS) {
   return new Promise((resolve) => {
-    const child = spawn(command, args, { stdio: "inherit", shell: process.platform === "win32" });
-    child.on("error", (error) => resolve({ code: 1, error }));
-    child.on("close", (code) => resolve({ code: code ?? 1 }));
+    let settled = false;
+    const finish = (result) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      resolve(result);
+    };
+    const child = spawn(command, args, {
+      stdio: "inherit",
+      shell: process.platform === "win32",
+      killSignal: "SIGTERM",
+    });
+    const timer = setTimeout(() => {
+      child.kill("SIGTERM");
+      // A child that ignores SIGTERM must not keep the session alive.
+      setTimeout(() => { if (!settled) child.kill("SIGKILL"); }, 5_000).unref();
+      finish({ code: 1, timedOut: true });
+    }, timeoutMs);
+    if (typeof timer.unref === "function") timer.unref();
+    child.on("error", (error) => finish({ code: 1, error }));
+    child.on("close", (code) => finish({ code: code ?? 1 }));
   });
 }
 
-export async function plan({ scope = "project", agent = null } = {}) {
-  const detected = await detectAgents();
+export async function plan({ scope = "project", agent = null, detection = null } = {}) {
+  const agents = detection ?? await detectAgents();
   const rows = [];
   for (const pkg of PACKAGES) {
     const missing = [];
@@ -188,18 +223,31 @@ export async function plan({ scope = "project", agent = null } = {}) {
       missing,
       manual: pkg.manual ?? null,
       reason: pkg.reason ?? null,
-      source: pkg.source(),
+      source: packageSource(pkg),
       skills: pkg.skills,
     });
   }
-  return { detected, scope, rows };
+  return { detected: agents.detected, detectedLocal: agents.local, detectedGlobal: agents.global, scope, rows };
 }
 
 function installArgs(pkg, agent, scope) {
-  const args = ["skills", "add", pkg.source(), "-a", agent, "-y"];
+  const args = ["-y", `skills@${SKILLS_CLI_VERSION}`, "add", packageSource(pkg), "-a", agent, "-y"];
   if (scope === "global") args.push("-g");
   for (const skill of pkg.skills) args.push("--skill", skill);
   return args;
+}
+
+function printHelp() {
+  console.log("Usage: node scripts/bootstrap.mjs [--check] [--yes] [--global] [--agent <id>] [--json]");
+  console.log("");
+  console.log("  (default)  Report package status. Exits 1 when a required package is missing.");
+  console.log("  --check    Same as default.");
+  console.log("  --yes      Install missing required packages from the fixed list, pinned.");
+  console.log("  --global   Install to the user directory. Default is project scope.");
+  console.log("  --agent    Target agent id, required when none or several are detected.");
+  console.log("  --json     Machine-readable output. Cannot be combined with --yes.");
+  console.log("");
+  console.log("This script accepts no package source argument. Its list is fixed in the file.");
 }
 
 function printPlan({ detected, scope, rows }, agent) {
@@ -238,34 +286,45 @@ function printPlan({ detected, scope, rows }, agent) {
 }
 
 async function main() {
-  const { flags, agent: requestedAgent } = parseArgs(process.argv.slice(2));
-  if (flags.has("--help") || flags.has("-h")) {
-    console.log("Usage: node scripts/bootstrap.mjs [--check] [--yes] [--global] [--agent <id>] [--json]");
-    console.log("");
-    console.log("  (default)  Report package status. Exits 1 when a required package is missing.");
-    console.log("  --check    Same as default.");
-    console.log("  --yes      Install missing required packages from the fixed list, pinned.");
-    console.log("  --global   Install to the user directory. Default is project scope.");
-    console.log("  --agent    Target agent id, required when none or several are detected.");
-    console.log("  --json     Machine-readable output.");
-    console.log("");
-    console.log("This script accepts no package source argument. Its list is fixed in the file.");
+  const argv = process.argv.slice(2);
+  // Help is checked before parsing so `--help --bogus` still prints help.
+  if (argv.includes("--help") || argv.includes("-h")) {
+    printHelp();
     return 0;
   }
 
-  const scope = flags.has("--global") ? "global" : "project";
-  const state = await plan({ scope });
-  const agent = requestedAgent ?? (state.detected.length === 1 ? state.detected[0] : null);
-  const checked = agent ? await plan({ scope, agent }) : state;
-
-  if (flags.has("--json")) {
-    console.log(JSON.stringify({ ...checked, agent }, null, 2));
-    const missing = checked.rows.filter((r) => r.kind === "required" && !r.present);
-    return !agent ? 2 : missing.length === 0 ? 0 : 1;
+  const { flags, agent: requestedAgent } = parseArgs(argv);
+  if (flags.has("--json") && flags.has("--yes")) {
+    fail("--json and --yes cannot be combined: --json only reports, --yes installs.");
   }
 
-  const { missingRequired, blocked } = printPlan(checked, agent);
-  if (blocked) return 2;
+  const scope = flags.has("--global") ? "global" : "project";
+  if (scope === "project" && !(await hasProjectMarker())) {
+    const message = `No project marker (.git or package.json) in ${process.cwd()}. Project scope installs into this directory, so run from the project root. Use --global only for a user-wide install.`;
+    if (flags.has("--json")) console.log(JSON.stringify({ error: message, detected: [], rows: [] }, null, 2));
+    else {
+      console.error("No project marker (.git or package.json) in " + process.cwd() + ".");
+      console.error("Project scope installs into this directory, so run from the project root.");
+      console.error("Use --global only for a user-wide install.");
+    }
+    return 1;
+  }
+
+  // One detection, one plan: a second pass could see a different filesystem.
+  const detection = await detectAgents();
+  const agent = requestedAgent ?? (detection.detected.length === 1 ? detection.detected[0] : null);
+  const state = await plan({ scope, agent, detection });
+
+  if (flags.has("--json")) {
+    console.log(JSON.stringify({ ...state, agent }, null, 2));
+    const missing = state.rows.filter((r) => r.kind === "required" && !r.present);
+    return missing.length === 0 ? 0 : 1;
+  }
+
+  const { missingRequired, blocked } = printPlan(state, agent);
+  // A blocked agent only stops an install. In report mode the list above is
+  // the answer, and the user passes --agent <id> to continue.
+  if (blocked) return flags.has("--yes") ? 2 : 0;
   if (missingRequired.length === 0) return 0;
   if (!flags.has("--yes")) return 1;
 
@@ -274,6 +333,10 @@ async function main() {
     const args = installArgs(pkg, agent, scope);
     console.log(`\n> npx ${args.join(" ")}`);
     const result = await run("npx", args);
+    if (result.timedOut) {
+      console.error(`Install timed out after ${INSTALL_TIMEOUT_MS / 1000}s for ${pkg.id}. Run the command above manually.`);
+      return 1;
+    }
     if (result.code !== 0) {
       console.error(`Install failed for ${pkg.id}. Run the command above manually and re-check.`);
       return 1;
@@ -282,15 +345,36 @@ async function main() {
   const after = await plan({ scope, agent });
   const still = after.rows.filter((r) => r.kind === "required" && !r.present);
   if (still.length) {
-    console.error(`Still missing after install: ${still.map((r) => r.id).join(", ")}`);
-    return 1;
+    // The CLI may have used another folder name, so this is a warning, not a
+    // failed install. List what to check by hand.
+    console.warn(`\nCould not confirm after install: ${still.map((r) => r.id).join(", ")}`);
+    console.warn("Check these files by hand, then re-run without --yes to confirm:");
+    for (const row of still) {
+      const pkg = PACKAGES.find((p) => p.id === row.id);
+      console.warn(`  - ${row.id}: ${pkg.skills.map((s) => `${s}/SKILL.md`).join(", ")} under the ${scope} skill directory`);
+    }
+    return 0;
   }
   console.log("\nAll required packages are installed.");
   return 0;
 }
 
-const invokedDirectly = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
-if (invokedDirectly) {
-  const code = await main();
-  process.exit(code);
+// realpath on both sides: a symlinked or differing absolute path used to make
+// this guard false and skip the whole bootstrap silently.
+function invokedDirectly() {
+  if (!process.argv[1]) return false;
+  try {
+    return realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url));
+  } catch {
+    return false;
+  }
+}
+
+if (invokedDirectly()) {
+  try {
+    process.exitCode = await main();
+  } catch (error) {
+    if (error instanceof UsageError) process.exitCode = 64;
+    else throw error;
+  }
 }

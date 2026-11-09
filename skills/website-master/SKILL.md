@@ -12,15 +12,16 @@ check the stage gate, and keep one progress file. Never do a stage's work here;
 delegate it and verify the result.
 
 Supporting files: `reference.md` (information-architecture and backend/data
-checklists), `stages.md` (stage-to-skill map and priority rules).
+checklists), `stages.md` (stage-to-skill map, phase-to-stage map, `docs/progress.md`
+format, and priority rules).
 
 ## First run
 
 Before the first stage, run the dependency bootstrap. It is part of the first
 website request, not a separate step for the user.
 
-1. Run `node scripts/bootstrap.mjs` from this skill folder's `scripts/` directory,
-   the folder that holds this `SKILL.md`. It reports only; it installs nothing.
+1. Run `node <skill-folder>/scripts/bootstrap.mjs` with the working directory set
+   to the target project; cwd determines install scope. It reports only.
 2. Show the user the missing packages, pinned versions, and commands. Ask for
    approval.
 3. On approval, run the same script with `--yes`. The script installs only the
@@ -68,14 +69,11 @@ Keep code, commands, paths, numbers, and error strings verbatim in any language.
 3. **Weight the stages.** Use the table in `stages.md`. A static portfolio skips
    heavy TDD and backend work; e-commerce keeps security, legal, and testing at
    full weight. Record the chosen depth per stage.
-4. **Check dependency skills.** Run `scripts/bootstrap.mjs` from this skill
-   folder's `scripts/` directory at the start of the first stage and again when a
-   stage's skill is not found. Missing required package: show the reported
-   command, ask for approval, then run the same script with `--yes`. Project
-   scope is the default; add `--global` only when the user asks for it. Pass
-   `--agent <id>` when the script cannot settle on one agent. Missing optional
-   package: continue, and record the fallback in `docs/progress.md`. Never
-   substitute an invented workflow.
+4. **Check dependency skills.** Re-run the bootstrap from the first step at the
+   start of the first stage, and again when a stage's skill is not found. Missing
+   required package: show the reported command, ask for approval, then run the
+   same script with `--yes`. Missing optional package: continue, and record the
+   fallback in `docs/progress.md`. Never substitute an invented workflow.
 5. **Load one stage skill.** Open only the file for the current stage. Apply its
    Steps and Checklist.
 6. **Check the gate.** Compare the output against the stage completion criteria
@@ -116,7 +114,9 @@ same agent takes each role in sequence.
 Rules:
 - One writer per file. Parallel agents never edit the same file.
 - Each phase writes `docs/handoffs/<phase>-task.md` and
-  `docs/handoffs/<phase>-result.md`.
+  `docs/handoffs/<phase>-result.md`. Valid `<phase>` values are the kebab-case
+  phase names `intake`, `plan`, `delegation`, `hardening`, `verification`,
+  `release`, `operate`.
 - A separate reviewer pass checks each phase against `docs/plan.md`.
 - Stage work in order: information architecture (`reference.md`), UI/UX design
   → external `frontend-ui-engineering` for the screen and token contract, with

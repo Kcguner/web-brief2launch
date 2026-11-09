@@ -22,10 +22,11 @@ Supporting files: `checklist.md` (full audit list), `reference.md` (snippets),
 
 ## Steps
 
-1. Run the automated audit from the repository root:
-   `node skills/seo/scripts/audit.mjs --url https://example.com --out docs/seo-audit.json`
-   With no network access, run it against a local build directory:
-   `node skills/seo/scripts/audit.mjs --dir ./dist --out docs/seo-audit.json`
+1. Run the automated audit from the user's project with
+   `node <skill-folder>/scripts/audit.mjs --url https://example.com --out docs/seo-audit.json`.
+   Installed skills live under `.agents/skills/<name>/`, so `<skill-folder>` is
+   `.agents/skills/seo` (or this folder in a clone). With no network access, run
+   it against a local build directory with `--dir ./dist --out docs/seo-audit.json`.
 2. Read the JSON. Note every page with a missing or duplicated title,
    description, canonical, H1, or Open Graph tag.
 3. Check heading hierarchy: exactly one H1 per page, no skipped levels, headings
@@ -95,8 +96,8 @@ Supporting files: `checklist.md` (full audit list), `reference.md` (snippets),
   to run, and mark the stage `blocked-manual`.
 - Site is behind auth or a CDN block: ask for a bypass token or a staging URL
   that allows the crawler. Do not report a false pass.
-- Schema validation service unreachable: validate JSON-LD locally with the
-  bundled structural check in `scripts/audit.mjs` and label the online
-  validation as not performed.
+- Schema validation service unreachable: check the JSON syntax with the bundled
+  check in `scripts/audit.mjs` (it runs `JSON.parse` only) and label structural
+  and online validation as not performed.
 - The site is client-rendered and the audit sees an empty shell: report
   rendering as a finding and re-run against a rendered snapshot.
