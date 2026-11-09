@@ -7,8 +7,12 @@ from the fixed list in `skills/website-master/scripts/bootstrap.mjs`, after you
 approve them.
 
 ```bash
-npx skills add Kcguner/web-brief2launch
+npx skills add Kcguner/web-brief2launch --skill '*'
 ```
+
+`--skill '*'` installs all six skills; without it the CLI can prompt per skill
+and leave a partial install. The CLI asks which agent to target; add
+`-a <agent>` to skip that prompt (ids are in the compatibility table).
 
 Then open `AGENTS.md` (or your agent's instruction file) and follow the reading
 order there. For agents that do not auto-load skills, point the agent at this
@@ -48,6 +52,12 @@ node scripts/bootstrap.mjs --yes --agent opencode   # when detection is ambiguou
   command per missing package, and prints each command before running it.
 - It never edits agent configuration, never installs hooks, and never installs
   optional packages.
+- Detection looks for each agent's configuration directory, not the shared
+  `.agents/skills` directory, because several agents use that same path.
+- Nothing updates automatically. Pins change only when this file and the table
+  below change together. `npx skills update` updates installed copies on demand
+  and can move a pinned package to its latest commit; run `npx skills check`
+  first to see what would change.
 - If you decline, or there is no network, the workflow continues without the
   missing skills and records which stages run in limited mode.
 
@@ -63,16 +73,16 @@ node scripts/bootstrap.mjs --yes --agent opencode   # when detection is ambiguou
 Manual commands, if you prefer to install everything yourself:
 
 ```bash
-# Our skill set (unverified)
-npx skills add Kcguner/web-brief2launch
+# Our skill set, all six skills (not install-tested)
+npx skills add Kcguner/web-brief2launch --skill '*'
 
-# Dependency: superpowers (unverified)
-npx skills add obra/superpowers
+# Dependency: superpowers, all skills (not install-tested)
+npx skills add obra/superpowers --skill '*'
 
-# Dependency: addyosmani/agent-skills, all 25 skills (unverified)
-npx skills add addyosmani/agent-skills
+# Dependency: addyosmani/agent-skills, all skills (not install-tested)
+npx skills add addyosmani/agent-skills --skill '*'
 
-# Optional dependency: impeccable, design direction and audit (unverified)
+# Optional dependency: impeccable, design direction and audit (not install-tested)
 npx impeccable install
 ```
 
@@ -117,7 +127,7 @@ The [skills CLI](https://github.com/vercel-labs/skills) installs into many
 agents:
 
 ```bash
-npx skills add Kcguner/web-brief2launch
+npx skills add Kcguner/web-brief2launch --skill '*'
 ```
 
 Or clone and point your agent at the folder:
@@ -214,20 +224,22 @@ reading order there.
 
 ## Compatibility
 
-Conventions below come from each project's setup documentation and the
-dependency packs' setup guides. None of them was install-tested in this
-repository, so every row says "not tested".
+Skill paths and `--agent` ids below were checked against the
+[skills CLI supported-agents table](https://github.com/vercel-labs/skills/blob/main/docs/agents.md)
+on 2026-11-10. Installation into each agent was not run in this repository, so
+every row still says "not tested". Several agents share the project directory
+`.agents/skills/`; the CLI links it into the agent-specific location.
 
-| Agent | Skill location / mechanism | Verified how | Tested |
-|-------|---------------------------|--------------|--------|
-| Claude Code | `~/.claude/skills/` or project `.claude/skills/`; plugins via `.claude-plugin/` | Common convention; dependency docs use plugins | not tested |
-| OpenCode | project `.opencode/skills/` or `~/.config/opencode/skills/` | Stated in addyosmani/agent-skills setup docs | not tested |
-| Codex | plugin with a root `skills/` directory, or `AGENTS.md` | Stated in addyosmani/agent-skills setup docs | not tested |
-| Cursor | project `.cursor/skills/`, rules in `.cursor/rules/*.mdc` | Stated in addyosmani/agent-skills setup docs | not tested |
-| GitHub Copilot | `.github/copilot-instructions.md`; skills vary by surface | Stated in addyosmani/agent-skills setup docs | not tested |
-| Windsurf | rules/skills configuration; no stable public skill folder | Not verified | not tested |
-| Gemini CLI | `gemini skills install <path>` | Stated in addyosmani/agent-skills setup docs | not tested |
-| Generic / other | `AGENTS.md` at repo root | Documented in this repo, untested | not tested |
+| Agent | `--agent` id | Project path | Global path | Tested |
+|-------|--------------|--------------|-------------|--------|
+| Claude Code | `claude-code` | `.claude/skills/` | `~/.claude/skills/` | not tested |
+| OpenCode | `opencode` | `.agents/skills/` | `~/.config/opencode/skills/` | not tested |
+| Codex | `codex` | `.agents/skills/` | `~/.agents/skills/` | not tested |
+| Cursor | `cursor` | `.agents/skills/` | `~/.cursor/skills/` | not tested |
+| GitHub Copilot | `github-copilot` | `.agents/skills/` | `~/.copilot/skills/` | not tested |
+| Windsurf | `windsurf` | `.windsurf/skills/` | `~/.codeium/windsurf/skills/` | not tested |
+| Gemini CLI | `gemini-cli` | `.agents/skills/` | `~/.gemini/skills/` | not tested |
+| Generic / other | n/a | `AGENTS.md` at repo root | n/a | not tested |
 
 Anything marked "not tested" should be treated as a starting point: check your
 agent's current documentation before relying on the path.

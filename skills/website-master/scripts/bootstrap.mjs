@@ -18,7 +18,7 @@
 //     never installs the optional package.
 
 import { spawn } from "node:child_process";
-import { access, readdir } from "node:fs/promises";
+import { access } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -73,12 +73,19 @@ export const PACKAGES = [
   },
 ];
 
-// Agent skill directory roots, project scope first.
+// Agent skill directories and detection markers come from the skills CLI
+// supported-agents table (checked 2026-11-10). Several agents share the
+// project directory `.agents/skills`, so detection uses agent config markers
+// instead of skill directories; otherwise one shared directory would look
+// like several installed agents.
 const AGENTS = [
-  { id: "opencode", project: ".opencode/skills", global: ".config/opencode/skills" },
-  { id: "claude-code", project: ".claude/skills", global: ".claude/skills" },
-  { id: "codex", project: ".codex/skills", global: ".codex/skills" },
-  { id: "cursor", project: ".cursor/skills", global: ".cursor/skills" },
+  { id: "claude-code", project: ".claude/skills", global: ".claude/skills", markers: [".claude", "~/.claude"] },
+  { id: "opencode", project: ".agents/skills", global: ".config/opencode/skills", markers: [".opencode", "~/.config/opencode"] },
+  { id: "codex", project: ".agents/skills", global: ".agents/skills", markers: [".codex", "~/.codex"] },
+  { id: "cursor", project: ".agents/skills", global: ".cursor/skills", markers: [".cursor", "~/.cursor"] },
+  { id: "github-copilot", project: ".agents/skills", global: ".copilot/skills", markers: [".github/copilot-instructions.md", "~/.copilot"] },
+  { id: "windsurf", project: ".windsurf/skills", global: ".codeium/windsurf/skills", markers: [".windsurf", "~/.codeium/windsurf"] },
+  { id: "gemini-cli", project: ".agents/skills", global: ".gemini/skills", markers: [".gemini", "~/.gemini"] },
 ];
 const AGENT_IDS = AGENTS.map((a) => a.id);
 
@@ -120,33 +127,29 @@ function fail(message) {
   process.exit(64);
 }
 
-async function dirHasSkill(dir) {
-  if (!(await exists(dir))) return false;
-  try {
-    for (const entry of await readdir(dir, { withFileTypes: true })) {
-      if (entry.isDirectory() && (await hasSkill(dir, entry.name))) return true;
-    }
-  } catch {
-    return false;
-  }
-  return false;
+function expandPath(path) {
+  return path.startsWith("~/") ? join(homedir(), path.slice(2)) : join(process.cwd(), path);
 }
 
 async function detectAgents() {
   const found = [];
   for (const agent of AGENTS) {
-    if ((await dirHasSkill(join(process.cwd(), agent.project))) || (await dirHasSkill(join(homedir(), agent.global)))) {
-      found.push(agent.id);
+    for (const marker of agent.markers) {
+      if (await exists(expandPath(marker))) {
+        found.push(agent.id);
+        break;
+      }
     }
   }
   return found;
 }
 
-async function findInstalled(name, scope) {
-  const dirs = [];
-  for (const agent of AGENTS) {
-    if (scope !== "global") dirs.push(join(process.cwd(), agent.project));
-    if (scope !== "project") dirs.push(join(homedir(), agent.global));
+async function findInstalled(name, scope, agentId = null) {
+  const agents = agentId ? AGENTS.filter((a) => a.id === agentId) : AGENTS;
+  const dirs = new Set();
+  for (const agent of agents) {
+    if (scope !== "global") dirs.add(join(process.cwd(), agent.project));
+    if (scope !== "project") dirs.add(join(homedir(), agent.global));
   }
   const hits = [];
   for (const dir of dirs) if (await hasSkill(dir, name)) hits.push(dir);
@@ -161,14 +164,14 @@ function run(command, args) {
   });
 }
 
-export async function plan({ scope = "project" } = {}) {
+export async function plan({ scope = "project", agent = null } = {}) {
   const detected = await detectAgents();
   const rows = [];
   for (const pkg of PACKAGES) {
     const missing = [];
     const presentDirs = new Set();
     for (const skill of pkg.skills) {
-      const dirs = await findInstalled(skill, scope);
+      const dirs = await findInstalled(skill, scope, agent);
       if (dirs.length === 0) missing.push(skill);
       else for (const dir of dirs) presentDirs.add(dir);
     }
@@ -214,15 +217,15 @@ function printPlan({ detected, scope, rows }, agent) {
   }
   line("");
   const missingRequired = rows.filter((r) => r.kind === "required" && !r.present);
-  if (missingRequired.length === 0) {
-    line("All required packages are installed for this scope.");
-    return { missingRequired, blocked: false };
-  }
   if (!agent) {
     line("Cannot choose a target agent. Pass --agent <id> with one of:");
     line(`  ${AGENT_IDS.join(", ")}`);
     line("Nothing was installed.");
     return { missingRequired, blocked: true };
+  }
+  if (missingRequired.length === 0) {
+    line("All required packages are installed for this scope.");
+    return { missingRequired, blocked: false };
   }
   line("Missing required packages. Install with:");
   for (const row of missingRequired) {
@@ -253,17 +256,18 @@ async function main() {
   const scope = flags.has("--global") ? "global" : "project";
   const state = await plan({ scope });
   const agent = requestedAgent ?? (state.detected.length === 1 ? state.detected[0] : null);
+  const checked = agent ? await plan({ scope, agent }) : state;
 
   if (flags.has("--json")) {
-    console.log(JSON.stringify({ ...state, agent }, null, 2));
-    const missing = state.rows.filter((r) => r.kind === "required" && !r.present);
-    return missing.length === 0 ? 0 : 1;
+    console.log(JSON.stringify({ ...checked, agent }, null, 2));
+    const missing = checked.rows.filter((r) => r.kind === "required" && !r.present);
+    return !agent ? 2 : missing.length === 0 ? 0 : 1;
   }
 
-  const { missingRequired, blocked } = printPlan(state, agent);
+  const { missingRequired, blocked } = printPlan(checked, agent);
+  if (blocked) return 2;
   if (missingRequired.length === 0) return 0;
   if (!flags.has("--yes")) return 1;
-  if (blocked) return 2;
 
   for (const row of missingRequired) {
     const pkg = PACKAGES.find((p) => p.id === row.id);
@@ -275,7 +279,7 @@ async function main() {
       return 1;
     }
   }
-  const after = await plan({ scope });
+  const after = await plan({ scope, agent });
   const still = after.rows.filter((r) => r.kind === "required" && !r.present);
   if (still.length) {
     console.error(`Still missing after install: ${still.map((r) => r.id).join(", ")}`);
