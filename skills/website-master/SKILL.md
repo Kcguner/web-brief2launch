@@ -33,26 +33,18 @@ website request, not a separate step for the user.
 6. On refusal or no network, continue the base flow. Record the limited stages
    and the reason in `docs/progress.md`. Do not imitate a missing skill.
 
-Rules:
-- Never install anything without explicit user approval.
-- Never edit the user's agent configuration or add hooks.
-- `impeccable` is optional. If it is missing, stage 3 runs without its audit and
-  records the fallback evidence; do not block on it.
-- Ask once per project. A second run of the check that finds everything present
-  must not prompt again.
+Rules: never install without explicit approval; never edit agent configuration
+or add hooks; `impeccable` is optional, so a missing install falls back to
+recorded manual evidence in stage 3 without blocking; ask once per project, and
+never prompt again when a second check finds everything present.
 
-Then, once per project, ask whether to add a standing instruction to the
-project's agent instruction file (AGENTS.md, or the equivalent file the agent
-reads at session start). If approved, append exactly this line and nothing else:
+Then, once per project, ask whether to add this exact line to the project's
+agent instruction file (AGENTS.md or the file the agent reads at session start):
 
 `For website or web app requests, use the website-master skill first.`
 
-Rules:
-- Never modify the instruction file without explicit user approval.
-- If the line is already present (exact or equivalent), do not ask again.
-- If the user declines, continue without the line and do not ask again in the
-  same project.
-- Record the decision in `docs/progress.md` when it exists.
+Never modify the file without approval, do not ask again if the line is already
+present or the user declined, and record the decision in `docs/progress.md`.
 
 ## Language
 
@@ -88,14 +80,12 @@ Keep code, commands, paths, numbers, and error strings verbatim in any language.
    Steps and Checklist.
 6. **Check the gate.** Compare the output against the stage completion criteria
    in `stages.md`. Failing gate: fix and retest. Do not advance.
-7. **Auto-advance on a passing gate.** Once the gate passes, record progress and
-   move to the next stage without pausing. Pause and ask the user
-   only for an important decision: a missing dependency skill (install approval),
-   the brief and the plan in Phase 0-1, a scope change that contradicts the
-   approved brief, a gate that fails twice in a row, an irreversible or
-   destructive action (deploy, DNS change, data migration, secret rotation), legal
-   or counsel sign-off, and the final release approval. For each pause, present:
-   what was done, the evidence, what is next, and the risk of continuing.
+7. **Auto-advance on a passing gate.** Record progress and move to the next
+   stage without pausing. Pause only for decisions: a missing dependency
+   (install approval), the brief and plan in Phase 0-1, a scope change that
+   contradicts the brief, a gate that fails twice, an irreversible action
+   (deploy, DNS change, migration, secret rotation), legal sign-off, or release.
+   At each pause, show what was done, the evidence, what is next, and the risk.
 8. **Record progress** in `docs/progress.md` after each stage: stage, status,
    evidence path, date, open issues, and whether the stage auto-advanced or
    paused for a decision.
