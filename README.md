@@ -1,12 +1,14 @@
 # web-brief2launch
 
+![web-brief2launch: a brief becomes a launched website through staged checkpoints](assets/hero.png)
+
 A portable, harness-independent skill set that takes a website from idea to
 launch and ongoing maintenance. It is Markdown skills plus optional Node.js
-(>= 18) helper scripts: no product-specific tools, commands, or integrations. It
-works in any agent that reads `SKILL.md` files, and in agents that do not,
-through `AGENTS.md`.
+(>= 18) helper scripts, with no product-specific tools, commands, or
+integrations. It works in any agent that reads `SKILL.md` files, and in agents
+that do not, through `AGENTS.md`.
 
-**Version:** 0.1.0
+Version 0.1.0.
 
 ## Quick start
 
@@ -92,8 +94,8 @@ and similar for a global install.
    source field to update.
 4. Update this table and run `node scripts/validate.mjs`.
 
-Manual commands, if you prefer to install everything yourself. The dependency
-commands carry the same pins as the table above:
+If you prefer to install everything yourself, the manual commands below carry
+the same pins as the table above:
 
 ```bash
 # Our skill set, all six skills (not install-tested)
@@ -131,7 +133,7 @@ superpowers version this set references.
 | `skills/website-master/reference.md` | Stage checklists for IA and backend/data |
 | `skills/website-intake/` | Question bank that produces `docs/brief.md` |
 | `skills/seo/` | Technical and on-page SEO, structured data, plus an audit script |
-| `skills/legal-compliance/` | Privacy, cookies, KVKK/GDPR, terms — not legal advice |
+| `skills/legal-compliance/` | Privacy, cookies, KVKK/GDPR, terms (not legal advice) |
 | `skills/monitoring-maintenance/` | Analytics, errors, uptime, maintenance calendar |
 | `skills/final-quality-gate/` | Release gate: one PASS/FAIL report from every output |
 | `skills/*/checklist.md` | Full per-skill checklists, loaded on demand |
@@ -144,10 +146,12 @@ superpowers version this set references.
 
 Only six skills are written here. The engineering stages (planning, UI/UX,
 frontend, backend, performance, security, testing, deployment) are delegated to
-three well-maintained external skill packs, referenced by name and repository.
-Information architecture and the backend data model use the checklists in
-`skills/website-master/reference.md`. Nothing is copied. This keeps one source
-of truth per skill and avoids drift.
+three external skill packs, referenced by name and repository. Information
+architecture and the backend data model use the checklists in
+`skills/website-master/reference.md`. Nothing is copied, so every skill keeps
+one source of truth instead of drifting copies.
+
+![The orchestrator skill delegates design, code, audit, security and deployment to specialist skills](assets/orchestrator.png)
 
 ## Dependency skill packs
 
@@ -155,7 +159,7 @@ These commands are unpinned convenience paths, so they drift from the commit
 pins above. Use the bootstrap, or the pinned manual commands under Quick start,
 when you need the exact commits recorded in the table.
 
-**superpowers** (planning, brainstorming, delegation, TDD, code review):
+superpowers (planning, brainstorming, delegation, TDD, code review):
 
 ```bash
 # generic, via the skills CLI
@@ -179,7 +183,7 @@ copilot plugin marketplace add obra/superpowers-marketplace
 copilot plugin install superpowers@superpowers-marketplace
 ```
 
-**addyosmani/agent-skills** (frontend, API design, performance, security,
+addyosmani/agent-skills (frontend, API design, performance, security,
 testing, CI/CD, launch, observability):
 
 ```bash
@@ -187,8 +191,7 @@ npx skills add addyosmani/agent-skills            # all 25 skills
 npx skills add addyosmani/agent-skills --skill frontend-ui-engineering
 ```
 
-
-**impeccable** (design direction, craft floor, design audit and polish):
+impeccable (design direction, craft floor, design audit and polish):
 
 ```bash
 npx impeccable install
@@ -232,6 +235,8 @@ Re-check after upgrading a dependency pack; skill names can change.
 6. Before release, the agent runs `skills/final-quality-gate/SKILL.md` and shows
    one PASS/FAIL report.
 7. After launch, `skills/monitoring-maintenance/SKILL.md` sets up monitoring.
+
+![The final quality gate stamps PASS before a site launches](assets/quality-gate.png)
 
 If your agent does not auto-load skills, open `AGENTS.md` first and follow the
 reading order there.
@@ -285,14 +290,14 @@ VERBİS registration.
 
 ## Acknowledgements
 
-This set stands on three excellent open skill packs and does not copy from them:
+This set references three open skill packs and copies nothing from them:
 
-- [obra/superpowers](https://github.com/obra/superpowers) — the plan-first,
-  subagent-driven development methodology behind Phases 0–2.
-- [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills) — the
+- [obra/superpowers](https://github.com/obra/superpowers): the plan-first,
+  subagent-driven development methodology behind Phases 0 to 2.
+- [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills): the
   engineering skills for frontend, API, performance, security, testing, CI/CD,
   launch, and observability.
-- [pbakaus/impeccable](https://github.com/pbakaus/impeccable) — the design
+- [pbakaus/impeccable](https://github.com/pbakaus/impeccable): the design
   direction, craft floor, and design audit used in stage 3.
 
 Install them with the commands above; they keep their own licenses and update
@@ -300,4 +305,4 @@ cadence.
 
 ## License
 
-MIT — see `LICENSE`. Copyright (c) 2026 Kaan Can Güner.
+MIT. See `LICENSE`. Copyright (c) 2026 Kaan Can Güner.
