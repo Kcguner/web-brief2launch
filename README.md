@@ -137,6 +137,7 @@ superpowers version this set references.
 | `skills/*/checklist.md` | Full per-skill checklists, loaded on demand |
 | `skills/website-master/scripts/bootstrap.mjs` | Fixed, pinned dependency installer used on first run |
 | `scripts/validate.mjs` | Repository self-check: frontmatter, line limits, links |
+| `.github/workflows/validate.yml` | CI: runs the self-check on Node 18 and 22 for every push and PR |
 | `docs/trigger-tests.md` | Manual prompts that test skill auto-selection |
 | `SUMMARY.md` | Turkish repository summary and audit notes |
 | `AGENTS.md` | Universal entry point and reading order (clone or manual install only) |

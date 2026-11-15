@@ -424,7 +424,69 @@ async function main() {
     catch (e) { verdictCode = e.code ?? 1; }
     if (verdictCode !== 0) scriptProblems.push(`gate.mjs did not exit 0 on a recorded release PASS (exit ${verdictCode})`);
 
-    fixtureNote = `audit: ${auditSummary || "no output"} | gate: ${gateSummary || "no output"} | regressions: blocked=${blockedCode === 1 ? "ok" : "FAIL"}, verdict=${verdictCode === 0 ? "ok" : "FAIL"}`;
+    // URL-mode regression on a throwaway local server: SSRF refusals,
+    // sitemap-seeded breadth-first crawl, robots skip, and manual redirect
+    // following, without touching the public network.
+    const { createServer } = await import("node:http");
+    const srv = createServer();
+    await new Promise((done) => srv.listen(0, "127.0.0.1", done));
+    const port = srv.address().port;
+    const base = `http://127.0.0.1:${port}`;
+    const urlPage = (name, extra = "") => `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Fixture ${name}</title><meta name="description" content="A fixture page with a description long enough for the audit script."><link rel="canonical" href="${base}/${name}"><meta property="og:type" content="website"><meta property="og:title" content="Fixture ${name}"><meta property="og:description" content="Fixture."><meta property="og:image" content="${base}/og.png"><meta property="og:url" content="${base}/${name}"><meta name="twitter:card" content="summary"><meta name="twitter:title" content="Fixture ${name}"><meta name="twitter:description" content="Fixture."><meta name="twitter:image" content="${base}/og.png"></head><body><h1>Fixture ${name}</h1><p>Body text long enough to clear the thin content threshold of two hundred characters. This paragraph repeats useful words so the rendered text count is safely above the limit used by the audit script for every fixture page.</p>${extra}</body></html>`;
+    const routes = {
+      "/": urlPage("home", `<a href="/a">A</a> <a href=/b>B unquoted</a> <a href="/redir">Redirect</a>`),
+      "/a": urlPage("a", `<a href="/deep">Deep</a>`),
+      "/b": urlPage("b"),
+      "/deep": urlPage("deep"),
+      "/sitemap-only": urlPage("sitemap-only"),
+      "/private/secret": urlPage("secret"),
+      "/robots.txt": `User-agent: *\nAllow: /\nDisallow: /private/\n\nSitemap: ${base}/sitemap.xml\n`,
+      "/sitemap.xml": `<?xml version="1.0"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>${base}/a</loc></url><url><loc>${base}/sitemap-only</loc></url><url><loc>${base}/private/secret</loc></url></urlset>`,
+    };
+    srv.on("request", (req, res) => {
+      const path = req.url.split("?")[0];
+      if (path === "/redir") { res.writeHead(302, { location: "/b" }); res.end(); return; }
+      const body = routes[path];
+      if (body === undefined) { res.writeHead(404); res.end("not found"); return; }
+      const type = path.endsWith(".txt") ? "text/plain" : path.endsWith(".xml") ? "application/xml" : "text/html; charset=utf-8";
+      res.writeHead(200, { "content-type": type });
+      res.end(body);
+    });
+    let urlMode = "ok";
+    let urlRun = 0;
+    const urlAudit = async (target, extraArgs = []) => {
+      urlRun += 1;
+      const out = join(sandbox, `url-audit-${urlRun}.json`);
+      let code = 0;
+      try { await run(process.execPath, [audit, "--url", target, "--out", out, ...extraArgs], { timeout: 30000 }); }
+      catch (e) { code = e.code ?? 1; }
+      let json = null;
+      try { json = JSON.parse(await readFile(out, "utf8")); } catch { /* refused runs write no report */ }
+      return { code, json };
+    };
+    try {
+      const refused = await urlAudit(base);
+      if (refused.code !== 2) { urlMode = "FAIL"; scriptProblems.push(`audit.mjs did not refuse a loopback --url (exit ${refused.code}, want 2)`); }
+      const octal = await urlAudit(`http://0177.0.0.1:${port}`);
+      if (octal.code !== 2) { urlMode = "FAIL"; scriptProblems.push(`audit.mjs did not refuse an octal loopback --url (exit ${octal.code}, want 2)`); }
+      const crawl = await urlAudit(base, ["--allow-private"]);
+      // The redirect re-audits /b under its final URL, so a duplicate-title
+      // error (exit 1) is expected; judge the crawl by its JSON content.
+      const urls = (crawl.json?.pages ?? []).map((p) => p.url);
+      const crawlOk = crawl.json
+        && urls.some((u) => u.endsWith("/deep"))
+        && urls.some((u) => u.endsWith("/sitemap-only"))
+        && urls.some((u) => u.endsWith("/b"))
+        && (crawl.json.site.robotsSkipped ?? 0) >= 1
+        && !urls.some((u) => u.includes("secret"))
+        && crawl.json.pages.some((p) => p.requestedUrl);
+      if (!crawlOk) { urlMode = "FAIL"; scriptProblems.push("audit.mjs url-mode crawl regression failed (deep/sitemap/robots/redirect checks)"); }
+    } finally {
+      srv.closeAllConnections?.();
+      await new Promise((done) => srv.close(done));
+    }
+
+    fixtureNote = `audit: ${auditSummary || "no output"} | gate: ${gateSummary || "no output"} | regressions: blocked=${blockedCode === 1 ? "ok" : "FAIL"}, verdict=${verdictCode === 0 ? "ok" : "FAIL"}, url-mode=${urlMode}`;
   } catch (e) {
     scriptProblems.push(`fixture run failed: ${e.message}`);
   }

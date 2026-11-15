@@ -13,7 +13,7 @@ isteğe bağlı Node.js (>= 18) yardımcı script'leri vardır.
 
 - **Sürüm:** 0.1.0
 - **Lisans:** MIT — Copyright (c) 2026 Kaan Can Güner
-- **Boyut:** ~876 KB, 22 dosya (`.git` hariç), 16 Markdown dosyası
+- **Boyut:** ~876 KB, 23 dosya (`.git` hariç), 16 Markdown dosyası
 - **Yerel klasör adı:** `webmaster-skill`
 - **README'deki ürün adı / kurulum kaynağı:** `web-brief2launch` (`Kcguner/web-brief2launch`)
 - **Kendi doğrulaması:** `node scripts/validate.mjs` → **12/12 PASS**
@@ -72,7 +72,8 @@ README.md  (kurulum, bağımlılıklar, uyumluluk)
     ├─ checklist.md                     10 bölümlü tam yayın kontrol listesi
     └─ scripts/gate.mjs                 yapısal kapı kontrolü (262 satır)
 
-scripts/validate.mjs             depo öz-denetimi (591 satır)
+scripts/validate.mjs             depo öz-denetimi (653 satır)
+.github/workflows/validate.yml   CI: her push/PR'da Node 18 ve 22'de öz-denetim
 docs/trigger-tests.md            15 manuel skill tetikleme testi
 ```
 
@@ -388,8 +389,10 @@ Depo öz-denetimi; 12 kontrol çalıştırır:
 6. Dış skill adları doğrulanmış upstream listeleriyle eşleşir
 7. Her script `--check`, `--help` ve üretilen mini site fixture'ında çalışır;
    `--json` sunan script'lerin çıktısı parse edilebilir JSON olmalı. Fixture
-   ayrıca iki gate regresyonu çalıştırır: liste öğesi içi `status: blocked`
-   yapısal FAIL üretmeli (exit 1), kayıtlı `Verdict: PASS` exit 0 üretmeli
+   ayrıca iki gate regresyonu (liste öğesi içi `status: blocked` → exit 1,
+   kayıtlı `Verdict: PASS` → exit 0) ve geçici bir yerel HTTP sunucusuyla
+   URL-modu audit regresyonları çalıştırır: loopback ve oktallı IP reddi,
+   sitemap tohumlu BFS crawl, robots skip, manuel redirect takibi
 8. Script'lerin ağ/dosya silme/env/secret erişim yüzeyi listelenir (`node:dns`
    dahil)
 9. `LICENSE` mevcut
@@ -438,7 +441,7 @@ RESULT: PASS — 12/12 checks passed, 0 failed.
   6. 14 referenced, 17 table rows
   7. 4 scripts; audit: Pages: 2 | errors: 0 | warnings: 0 |
      gate: Required: 14 | missing: 0 | skipped: 0 | findings: 0 |
-     regressions: blocked=ok, verdict=ok
+     regressions: blocked=ok, verdict=ok, url-mode=ok
   8. network 2, delete 4, env 0, secret-path 0
   9. LICENSE found
  10-12. PASS
@@ -580,6 +583,10 @@ Tam denetimde bulunan ve düzeltilen sorunlar (öncelik sırasıyla):
     `e-commerce` proje tipi beyaz listede.
 12. **ozet.md → SUMMARY.md** olarak yeniden adlandırıldı (İngilizce dosya adı
     kuralı) ve yanlış iddialar düzeltildi.
+13. **CI + otomatik regresyon (2026-11-16, ikinci tur):** GitHub Actions
+    iş akışı her push/PR'da öz-denetimi Node 18 ve 22'de çalıştırır; manuel
+    yerel-sunucu audit testleri (SSRF reddi, BFS crawl, robots, redirect)
+    validate fixture'ına taşındı ve ağa çıkmadan otomatik çalışır.
 
 Doğrulama: `node scripts/validate.mjs` → 12/12 PASS (fixture regresyonları
 dahil); gate için 8, audit için yerel sunuculu 4 senaryo testi elle çalıştırıldı
