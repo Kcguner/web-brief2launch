@@ -22,7 +22,8 @@ the orchestrator's `docs/progress.md`. `docs/quality-gate.json` is this gate's
 own machine-readable output, not an input.
 
 - `docs/brief.md`, `docs/plan.md`, `docs/progress.md`
-- `docs/ia.md`, `docs/design.md`, `docs/data-model.md`
+- `docs/ia.md`, `docs/design.md`, `docs/frontend-report.md`,
+  `docs/data-model.md`
 - `docs/seo-report.md`, `docs/performance-report.md`,
   `docs/security-report.md`
 - `docs/legal-review.md`, `docs/test-report.md`, `docs/deployment.md`,
@@ -42,9 +43,11 @@ Every item there must still be resolved or accepted in writing before release.
    Installed skills live under `.agents/skills/<name>/`, so `<skill-folder>` is
    `.agents/skills/final-quality-gate` (or this folder in a clone). It reports
    missing files, empty templates, and unresolved markers. Exit codes: `1`
-   structural FAIL; `2` usage or write error; `3` structural PASS but the
-   release verdict is still pending — continue with the checklist below before
-   publishing.
+   structural FAIL or a recorded release FAIL; `2` usage or write error; `3`
+   structural PASS but no release verdict recorded yet — continue with the
+   checklist below before publishing. After step 8 writes the verdict into
+   `docs/quality-gate.md`, re-run the script: it reads the `Verdict:` line back
+   into `quality-gate.json` and exits `0` on a recorded PASS.
 2. Load `checklist.md`. Walk every item in order. Record one of:
    `pass`, `fail`, `manual-required`, `accepted-risk`.
 3. Verify evidence, not prose. For each item, open the referenced report and

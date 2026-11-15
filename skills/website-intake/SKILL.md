@@ -31,8 +31,10 @@ brainstorming for open-ended exploration of goals and trade-offs.
    a "you decide" option so the user can delegate the choice.
 4. If the user answers "you decide", record the recommended default in the brief
    and mark it `decided-by-agent: true`.
-5. Detect the project type from the answers: portfolio, e-commerce, SaaS, blog,
-   corporate, documentation, community, or other. Record it verbatim.
+5. Detect the project type from the answers using the canonical list in
+   `../website-master/stages.md`: static, portfolio, brochure, blog, corporate,
+   e-commerce, SaaS, documentation, community, web app, other. Record it
+   verbatim.
 6. Fill the brief template. Keep it under two pages.
 7. Run the open-ended exploration with the external `brainstorming` skill if it
    is available. Fold its conclusions into the brief; do not create a second
@@ -52,9 +54,9 @@ brainstorming for open-ended exploration of goals and trade-offs.
    reason: later stages need a measurable baseline)
 
 **Group B — Site type and scope**
-5. Which type fits best: portfolio, e-commerce, SaaS, blog, corporate,
-   documentation, community, other? (default: inferred from answers; reason:
-   the orchestrator weights stages by type)
+5. Which type fits best: static, portfolio, brochure, blog, corporate,
+   e-commerce, SaaS, documentation, community, web app, other? (default:
+   inferred from answers; reason: the orchestrator weights stages by type)
 6. Which pages or sections are required at launch? (default: home, primary
    service or product page, about, contact, legal pages; reason: launch scope)
 7. What is explicitly out of scope for version one? (default: accounts,

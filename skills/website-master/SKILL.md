@@ -64,8 +64,9 @@ Keep code, commands, paths, numbers, and error strings verbatim in any language.
 
 1. **Read the brief.** If `docs/brief.md` is absent or unapproved, stop and run
    `../website-intake/SKILL.md`.
-2. **Classify the project.** Portfolio, e-commerce, SaaS, blog, corporate,
-   documentation, community, other. Record it in `docs/progress.md`.
+2. **Classify the project.** Use a canonical type from `stages.md`: static,
+   portfolio, brochure, blog, corporate, e-commerce, SaaS, documentation,
+   community, web app, other. Record it in `docs/progress.md`.
 3. **Weight the stages.** Use the table in `stages.md`. A static portfolio skips
    heavy TDD and backend work; e-commerce keeps security, legal, and testing at
    full weight. Record the chosen depth per stage.

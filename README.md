@@ -86,8 +86,10 @@ and similar for a global install.
 1. Resolve the new tag: `git ls-remote --tags https://github.com/<repo>`.
 2. Take the dereferenced commit (`refs/tags/<tag>^{}`) and check the skill
    folders still exist at that commit.
-3. Update `ref`, `pin`, and `source()` for that package in
-   `skills/website-master/scripts/bootstrap.mjs`.
+3. Update `ref` and `pin` for that package in
+   `skills/website-master/scripts/bootstrap.mjs`. The install source is
+   derived from them as `repo@pin` by `packageSource()`; there is no separate
+   source field to update.
 4. Update this table and run `node scripts/validate.mjs`.
 
 Manual commands, if you prefer to install everything yourself. The dependency
@@ -113,6 +115,13 @@ checklist evidence, and `docs/progress.md` records the fallback. It has its own
 installer, which asks questions and can add agent hooks, so the bootstrap never
 runs it for you.
 
+Both required packs contain a skill named `test-driven-development`. The
+bootstrap installs it only from `obra/superpowers`, so a bootstrap install has
+no collision. A manual `--skill '*'` install of both packs copies both copies
+into the same skill directory and the later install overwrites the earlier
+one; prefer the bootstrap, or pass explicit `--skill` names, when you need the
+superpowers version this set references.
+
 ## What it contains
 
 | Path | Role |
@@ -129,6 +138,7 @@ runs it for you.
 | `skills/website-master/scripts/bootstrap.mjs` | Fixed, pinned dependency installer used on first run |
 | `scripts/validate.mjs` | Repository self-check: frontmatter, line limits, links |
 | `docs/trigger-tests.md` | Manual prompts that test skill auto-selection |
+| `SUMMARY.md` | Turkish repository summary and audit notes |
 | `AGENTS.md` | Universal entry point and reading order (clone or manual install only) |
 
 Only six skills are written here. The engineering stages (planning, UI/UX,

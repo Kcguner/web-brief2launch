@@ -6,11 +6,13 @@
 //
 // Verifies that every required stage output exists, is non-trivial, and has no
 // unresolved markers. It does not judge quality: it produces the structure for
-// the human/agent review. Exit 1 if any required output fails, 2 on bad
-// arguments or an unwritable report, 3 when structure passes but the release
-// verdict is still pending (see --help).
+// the human/agent review. The release verdict is read from docs/quality-gate.md
+// once the manual checklist has been walked. Exit 1 on structural FAIL or a
+// recorded release FAIL, 2 on bad arguments or an unwritable report, 3 when
+// structure passes but no release verdict is recorded yet, 0 when structure
+// passes and quality-gate.md records a release PASS (see --help).
 
-import { readFile, writeFile, mkdir } from "node:fs/promises";
+import { readFile, writeFile, mkdir, rename, unlink } from "node:fs/promises";
 import { join, resolve, dirname } from "node:path";
 
 const args = process.argv.slice(2);
@@ -42,12 +44,13 @@ path relative to the skill. On a default install the skill folder is
 Checks that every required stage output exists, is non-trivial, and has no
 unresolved markers. Honours optional outputs for static project types when
 progress.md records the project type. Writes JSON with structuralVerdict and
-releaseVerdict (null until the manual checklist is walked).
+releaseVerdict (read from the Verdict line of docs/quality-gate.md, null until
+the manual checklist is walked and the report written).
 Exit codes:
-  0  structure passed and a release verdict is recorded
-  1  structural FAIL (missing, unreadable, or unresolved output)
+  0  structure passed and quality-gate.md records a release PASS
+  1  structural FAIL, or quality-gate.md records a release FAIL
   2  bad arguments, or the report cannot be written
-  3  structural PASS, release verdict still pending (walk checklist.md)
+  3  structural PASS, no release verdict recorded yet (walk checklist.md)
 Requires Node.js >= 18.`);
   process.exit(0);
 }
@@ -60,6 +63,7 @@ const required = [
   ["progress.md", "orchestrator"],
   ["ia.md", "Stage 2 information architecture"],
   ["design.md", "Stage 3 UI/UX"],
+  ["frontend-report.md", "Stage 4 frontend"],
   ["data-model.md", "Stage 5 backend", ["static", "portfolio", "blog", "brochure"]],
   ["seo-report.md", "Stage 6 SEO"],
   ["performance-report.md", "Stage 7 performance"],
@@ -197,29 +201,47 @@ try {
   const progress = await readFile(join(docsDir, "progress.md"), "utf8");
   const failing = new Set(["blocked", "blocked-manual", "fail", "failed"]);
   const badStatuses = [];
-  for (const line of progress.split("\n")) {
-    const m = line.match(/^\s*(?:[-*+]\s*)?status\s*:\s*([^\s|#]+)/i);
+  const notDone = [];
+  // Status may start the line or sit inside a list item, as in the stages.md
+  // example ("- Stage 6 SEO — status: blocked"). Table rows and fenced code
+  // are documentation, not stage records.
+  for (const { text: lineText } of linesOutsideFences(progress)) {
+    if (/^\s*\|/.test(lineText)) continue;
+    const m = lineText.match(/\bstatus\s*:\s*([^\s|#]+)/i);
     if (m && failing.has(m[1].toLowerCase())) badStatuses.push(m[1]);
+    if (/^\s*(?:[-*+]|\d+\.)\s*\[ \]/.test(lineText)) notDone.push(lineText);
   }
   if (badStatuses.length) report.unresolved.push({ file: "progress.md", detail: `${badStatuses.length} blocked/failed stage markers` });
-  const notDone = progress.match(/^\s*(?:[-*+]|\d+\.)\s*\[ \]/gm) || [];
   if (notDone.length) report.unresolved.push({ file: "progress.md", detail: `${notDone.length} unchecked items` });
 } catch { /* already reported as missing */ }
 
 if (report.missing.length || report.unresolved.length) report.structuralVerdict = "FAIL";
 
-const json = JSON.stringify(report, null, 2);
+// The release verdict is written by the manual checklist walk into
+// quality-gate.md ("**Verdict: PASS**"). Read it back so the JSON and the exit
+// code can reflect a recorded decision; absent or unparseable stays null.
 try {
-  await mkdir(dirname(resolve(outArg)), { recursive: true });
-  await writeFile(outArg, json, "utf8");
+  const gateReport = await readFile(join(docsDir, "quality-gate.md"), "utf8");
+  const v = gateReport.match(/^\s*(?:\*\*)?verdict\s*:\s*(PASS|FAIL)\b/im);
+  if (v) report.releaseVerdict = v[1].toUpperCase();
+} catch { /* not written yet */ }
+
+const json = JSON.stringify(report, null, 2);
+const outPath = resolve(outArg);
+const tmp = `${outPath}.tmp-${process.pid}-${Date.now()}`;
+try {
+  await mkdir(dirname(outPath), { recursive: true });
+  await writeFile(tmp, json, "utf8");
+  await rename(tmp, outPath);
 } catch (e) {
+  try { await unlink(tmp); } catch { /* ignore */ }
   console.error(`Cannot write ${outArg}: ${e.message}`);
   process.exit(2);
 }
 
 console.log(`Required: ${report.required.length} | missing: ${report.missing.length} | skipped: ${report.skipped.length} | findings: ${report.unresolved.length}`);
 for (const s of report.skipped) console.log(`  skipped: ${s.file} (${s.reason})`);
-console.log(`Structural verdict: ${report.structuralVerdict} (releaseVerdict stays null until the manual checklist is walked)`);
+console.log(`Structural verdict: ${report.structuralVerdict} | release verdict: ${report.releaseVerdict ?? "pending"}`);
 console.log(`Report: ${outArg}`);
 if (report.structuralVerdict === "FAIL") {
   for (const m of report.missing) console.log(`  missing: ${m}`);
@@ -227,6 +249,14 @@ if (report.structuralVerdict === "FAIL") {
   console.log("Structural FAIL. Fix the files above, then run the manual checklist in checklist.md.");
   process.exit(1);
 }
+if (report.releaseVerdict === "FAIL") {
+  console.log("Recorded release verdict: FAIL. Fix the blockers in quality-gate.md and re-run this gate.");
+  process.exit(1);
+}
+if (report.releaseVerdict === "PASS") {
+  console.log("Structure complete and recorded release verdict: PASS. Release still needs explicit user approval.");
+  process.exit(0);
+}
 console.log("Structure complete. Now run checklist.md item by item; structure alone is not a release PASS.");
-// Structural PASS is not a release PASS. Exit 3 so CI cannot read it as one.
+// No recorded verdict: exit 3 so CI cannot read a structural pass as a release PASS.
 process.exit(3);

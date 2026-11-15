@@ -10,9 +10,13 @@
 // Checks per page: title, meta description, canonical (count and absolute),
 // H1 count, heading order, lang, Open Graph (incl. image size), Twitter Card,
 // JSON-LD parse. Site-level: robots.txt, sitemap.xml, duplicate titles.
+// Discovery: home page links plus sitemap.xml URLs, then breadth-first through
+// discovered same-origin links up to --max pages. Redirects are followed
+// manually and every hop is re-checked against the private-host blocklist.
 // Writes JSON and prints a summary. Exit 1 if errors exist.
 
 import { readFile, writeFile, readdir, mkdir, rename, unlink } from "node:fs/promises";
+import { lookup } from "node:dns/promises";
 import { join, extname, dirname, relative, resolve } from "node:path";
 
 const args = process.argv.slice(2);
@@ -22,13 +26,16 @@ if (args.includes("--help") || args.includes("-h")) {
 
 Options:
   --url <site>       Audit a live site (http: or https:). Reads robots.txt and
-                     sitemap.xml, then crawls same-origin pages.
+                     sitemap.xml, seeds discovery from both, then crawls
+                     same-origin pages breadth-first. Redirects are followed
+                     manually; every hop is re-checked against the blocklist.
   --dir <build-dir>  Audit HTML files in a local directory instead.
   --out <file>       Report path. Default: seo-audit.json (in --dir mode it is
                      resolved next to <build-dir>; otherwise in the current dir).
   --max <N>          Maximum pages to audit (default 30).
   --allow-private    Allow localhost, loopback, link-local and private IPv4/IPv6
-                     targets. Off by default to block SSRF.
+                     targets, including names that resolve to private addresses.
+                     Off by default to block SSRF.
 
 Checks title, meta description, canonical, H1, heading order, lang, Open Graph,
 Twitter Card, and JSON-LD per page. Checks robots.txt and sitemap.xml when
@@ -77,14 +84,18 @@ if (!Number.isFinite(maxRaw) || maxRaw < 1) {
 const maxPages = Math.floor(maxRaw);
 
 function ipv4Parts(host) {
-  const dotted = host.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+  // Accept decimal, octal (leading 0) and hex (0x) forms, dotted or single
+  // integer, so "0177.0.0.1" cannot slip past as a public-looking name.
+  const parsePart = (p) => (/^0x/i.test(p) ? parseInt(p, 16) : /^0[0-7]+$/.test(p) ? parseInt(p, 8) : Number(p));
+  const part = "(?:0x[0-9a-f]+|0[0-7]+|[0-9]+)";
+  const dotted = host.match(new RegExp(`^(${part})\\.(${part})\\.(${part})\\.(${part})$`, "i"));
   if (dotted) {
-    const parts = dotted.slice(1).map(Number);
-    return parts.every((n) => n <= 255) ? parts : null;
+    const parts = dotted.slice(1).map(parsePart);
+    return parts.every((n) => Number.isFinite(n) && n >= 0 && n <= 255) ? parts : null;
   }
-  const single = host.match(/^(?:0x([0-9a-f]+)|\d+)$/i);
+  const single = host.match(/^(?:0x([0-9a-f]+)|0([0-7]+)|\d+)$/i);
   if (single) {
-    const n = single[1] ? parseInt(single[1], 16) : Number(host);
+    const n = single[1] ? parseInt(single[1], 16) : single[2] ? parseInt(single[2], 8) : Number(host);
     if (Number.isFinite(n) && n >= 0 && n <= 0xffffffff) {
       return [(n >>> 24) & 255, (n >>> 16) & 255, (n >>> 8) & 255, n & 255];
     }
@@ -133,6 +144,21 @@ function isPrivateHost(hostname) {
   return false;
 }
 
+// Best-effort DNS pre-check: a public-looking name that resolves to a private
+// address is refused. This narrows DNS-rebinding exposure but cannot close the
+// resolve-then-fetch race entirely without a custom connector.
+async function assertResolvesPublic(hostname) {
+  if (allowPrivate) return;
+  let addresses;
+  try { addresses = await lookup(hostname, { all: true }); }
+  catch { return; } // fetch will surface the resolution error itself
+  for (const { address } of addresses) {
+    if (isPrivateHost(address)) {
+      throw new Error(`Host "${hostname}" resolves to private address ${address}. Pass --allow-private to override.`);
+    }
+  }
+}
+
 if (urlArg) {
   let parsed = null;
   try { parsed = new URL(urlArg); }
@@ -153,6 +179,8 @@ if (urlArg) {
     console.error(`Refusing to audit private or loopback host "${parsed.hostname}". Pass --allow-private to override.`);
     process.exit(2);
   }
+  try { await assertResolvesPublic(parsed.hostname); }
+  catch (e) { console.error(e.message); process.exit(2); }
 }
 
 const results = { generatedAt: new Date().toISOString(), mode: null, pages: [], site: {}, errors: 0, warnings: 0 };
@@ -165,7 +193,7 @@ function addSiteError(rule, detail) {
 }
 
 function stripTags(html) {
-  return html.replace(/<script[\s\S]*?<\/script>/gi, " ").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  return html.replace(/<script[\s\S]*?<\/script>/gi, " ").replace(/<style[\s\S]*?<\/style>/gi, " ").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
 }
 
 // Reads one attribute value from a tag. Accepts double-quoted, single-quoted
@@ -209,7 +237,7 @@ function auditHtml(html, pageUrl, status = 200) {
 
   if (status >= 400) push("error", "http-status", `Page returned ${status}.`);
 
-  const title = (html.match(/<title[^>]*>([\s\S]*?)<\/title>/i) || [])[1];
+  const title = (html.match(/<title(?:\s[^>]*)?>([\s\S]*?)<\/title>/i) || [])[1];
   if (!title) push("error", "title-missing", "No <title> element.");
   else {
     const t = title.trim();
@@ -319,20 +347,47 @@ async function readLimited(res, limit) {
 }
 
 // htmlOnly gates on content-type so only HTML pages are parsed. robots.txt and
-// sitemap.xml calls pass htmlOnly: false.
+// sitemap.xml calls pass htmlOnly: false. Redirects are followed manually so
+// every hop re-runs the scheme and private-host checks; fetch's own "follow"
+// would jump to a redirect target unchecked (SSRF).
+const MAX_REDIRECTS = 5;
+const REDIRECT_CODES = new Set([301, 302, 303, 307, 308]);
+
 async function fetchText(url, { timeoutMs = 20000, htmlOnly = false, maxBytes = MAX_BYTES } = {}) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
-    const res = await fetch(url, { redirect: "follow", signal: ctrl.signal, headers: { "user-agent": "webmaster-skill-seo-audit/0.1" } });
-    const contentType = (res.headers.get("content-type") || "").toLowerCase();
-    const finalUrl = res.url || url;
-    if (htmlOnly && contentType && !/text\/html|application\/xhtml\+xml/.test(contentType)) {
-      try { await res.body?.cancel(); } catch { /* ignore */ }
-      return { status: res.status, url: finalUrl, contentType, skipped: true, text: "", truncated: false };
+    let current = url;
+    for (let hop = 0; ; hop += 1) {
+      const res = await fetch(current, { redirect: "manual", signal: ctrl.signal, headers: { "user-agent": "webmaster-skill-seo-audit/0.1" } });
+      if (REDIRECT_CODES.has(res.status)) {
+        const location = res.headers.get("location");
+        try { await res.body?.cancel(); } catch { /* ignore */ }
+        if (!location) {
+          return { status: res.status, url: current, contentType: "", text: "", truncated: false, skipped: false };
+        }
+        if (hop >= MAX_REDIRECTS) throw new Error(`Too many redirects (>${MAX_REDIRECTS}) starting at ${url}`);
+        let next;
+        try { next = new URL(location, current); }
+        catch { throw new Error(`Invalid redirect location "${location}" from ${current}`); }
+        if (next.protocol !== "http:" && next.protocol !== "https:") {
+          throw new Error(`Refusing redirect to non-HTTP scheme "${next.protocol}" from ${current}`);
+        }
+        if (!allowPrivate && isPrivateHost(next.hostname)) {
+          throw new Error(`Refusing redirect to private or loopback host "${next.hostname}" from ${current}. Pass --allow-private to override.`);
+        }
+        await assertResolvesPublic(next.hostname);
+        current = next.href;
+        continue;
+      }
+      const contentType = (res.headers.get("content-type") || "").toLowerCase();
+      if (htmlOnly && contentType && !/text\/html|application\/xhtml\+xml/.test(contentType)) {
+        try { await res.body?.cancel(); } catch { /* ignore */ }
+        return { status: res.status, url: current, contentType, skipped: true, text: "", truncated: false };
+      }
+      const { text, truncated } = await readLimited(res, maxBytes);
+      return { status: res.status, url: current, contentType, text, truncated, skipped: false };
     }
-    const { text, truncated } = await readLimited(res, maxBytes);
-    return { status: res.status, url: finalUrl, contentType, text, truncated, skipped: false };
   } finally {
     clearTimeout(timer);
   }
@@ -428,6 +483,8 @@ function robotsAllows(key, groups) {
   return !best || best.type === "allow";
 }
 
+const locsOf = (xml) => [...xml.matchAll(/<loc>\s*([^<\s]+)\s*<\/loc>/gi)].map((m) => m[1]);
+
 async function runUrl(base) {
   results.mode = "url";
   let home;
@@ -458,60 +515,91 @@ async function runUrl(base) {
   const homeEntry = auditHtml(home.text, startUrl, home.status);
   if (home.truncated) homeEntry.truncated = true;
 
-  const hrefs = [...home.text.matchAll(/<a[^>]+href=["']([^"'#]+)["']/gi)].map((m) => m[1]);
   const seen = new Set([pageKey(new URL(startUrl))]);
   const queue = [];
-  for (const href of hrefs) {
-    let abs;
-    try { abs = new URL(href, startUrl); }
-    catch { continue; }
-    if (abs.origin !== origin) continue;
-    if (abs.pathname.match(/\.(css|js|png|jpe?g|svg|webp|avif|ico|pdf|zip|xml|txt)$/i)) continue;
+  const enqueue = (abs) => {
+    if (abs.origin !== origin) return;
+    if (abs.pathname.match(/\.(css|js|png|jpe?g|svg|webp|avif|ico|pdf|zip|xml|txt)$/i)) return;
     const key = pageKey(abs);
-    if (seen.has(key)) continue;
+    if (seen.has(key)) return;
     seen.add(key);
     queue.push({ key, url: origin + key });
-  }
-
-  const allowed = robots ? queue.filter((item) => robotsAllows(item.key, robots.groups)) : queue;
-  const skippedByRobots = queue.length - allowed.length;
-  if (skippedByRobots > 0) results.site.robotsSkipped = skippedByRobots;
-
-  const batch = allowed.slice(0, Math.max(0, maxPages - 1));
-  results.site.linksDiscovered = queue.length + 1;
-  results.site.truncated = allowed.length > batch.length;
-
-  const fetched = await mapLimit(batch, CONCURRENCY, async (item) => {
-    try { return { item, res: await fetchText(item.url, { htmlOnly: true }) }; }
-    catch (e) { return { item, error: e }; }
-  });
-
-  for (const { item, res, error } of fetched) {
-    if (error) {
-      results.pages.push({ url: item.url, status: null, findings: [{ level: "error", rule: "fetch-failed", detail: error.message }] });
-      results.errors++;
-      continue;
+  };
+  // href values may be double-quoted, single-quoted, or unquoted (HTML5).
+  const extractLinks = (html, fromUrl) => {
+    for (const m of html.matchAll(/<a\b[^>]*?\bhref\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+))/gi)) {
+      const href = (m[1] ?? m[2] ?? m[3] ?? "").trim();
+      if (!href || href.startsWith("#")) continue;
+      let abs;
+      try { abs = new URL(href, fromUrl); }
+      catch { continue; }
+      enqueue(abs);
     }
-    if (res.skipped) {
-      results.pages.push({ url: res.url || item.url, status: res.status, findings: [], skipped: `content-type: ${res.contentType || "unknown"}` });
-      results.site.skipped = (results.site.skipped || 0) + 1;
-      continue;
-    }
-    const entry = auditHtml(res.text, res.url || item.url, res.status);
-    if (res.url && res.url !== item.url) entry.requestedUrl = item.url;
-    if (res.truncated) entry.truncated = true;
-  }
+  };
+  extractLinks(home.text, startUrl);
 
+  // The sitemap is read before the crawl so its URLs seed discovery. A
+  // sitemap index is expanded one level (capped) instead of being counted only.
   try {
     const sm = await fetchText(origin + "/sitemap.xml", { maxBytes: 512 * 1024 });
-    const locs = [...sm.text.matchAll(/<loc>\s*([^<\s]+)\s*<\/loc>/gi)].map((m) => m[1]);
+    let locs = locsOf(sm.text);
+    if (/<sitemapindex/i.test(sm.text)) {
+      const children = locs.filter((u) => { try { return new URL(u).origin === origin; } catch { return false; } }).slice(0, 10);
+      locs = [];
+      for (const child of children) {
+        try { const c = await fetchText(child, { maxBytes: 512 * 1024 }); locs.push(...locsOf(c.text)); }
+        catch { /* a broken child sitemap surfaces through the url count */ }
+      }
+    }
     results.site.sitemap = { status: sm.status, urls: locs.length, absolute: locs.every((u) => /^https?:\/\//i.test(u)) };
     if (sm.status !== 200) addSiteError("sitemap-not-200", "sitemap.xml is not 200.");
     if (locs.length === 0) addSiteError("sitemap-empty", "sitemap.xml has no <loc> entries.");
+    for (const loc of locs) {
+      try { enqueue(new URL(loc, startUrl)); } catch { /* invalid loc */ }
+    }
   } catch (e) {
     results.site.sitemap = { error: e.message };
     addSiteError("sitemap-fetch-failed", e.message);
   }
+
+  // Breadth-first crawl within the page budget: links found on deeper pages
+  // are audited too, not only links from the home page.
+  let robotsSkipped = 0;
+  let audited = 1; // the home page
+  while (queue.length && audited < maxPages) {
+    const batch = [];
+    while (queue.length && batch.length < CONCURRENCY && audited + batch.length < maxPages) {
+      const item = queue.shift();
+      if (robots && !robotsAllows(item.key, robots.groups)) { robotsSkipped += 1; continue; }
+      batch.push(item);
+    }
+    if (!batch.length) break;
+    const fetched = await mapLimit(batch, CONCURRENCY, async (item) => {
+      try { return { item, res: await fetchText(item.url, { htmlOnly: true }) }; }
+      catch (e) { return { item, error: e }; }
+    });
+
+    for (const { item, res, error } of fetched) {
+      audited += 1;
+      if (error) {
+        results.pages.push({ url: item.url, status: null, findings: [{ level: "error", rule: "fetch-failed", detail: error.message }] });
+        results.errors++;
+        continue;
+      }
+      if (res.skipped) {
+        results.pages.push({ url: res.url || item.url, status: res.status, findings: [], skipped: `content-type: ${res.contentType || "unknown"}` });
+        results.site.skipped = (results.site.skipped || 0) + 1;
+        continue;
+      }
+      const entry = auditHtml(res.text, res.url || item.url, res.status);
+      if (res.url && res.url !== item.url) entry.requestedUrl = item.url;
+      if (res.truncated) entry.truncated = true;
+      extractLinks(res.text, res.url || item.url);
+    }
+  }
+  if (robotsSkipped > 0) results.site.robotsSkipped = robotsSkipped;
+  results.site.linksDiscovered = seen.size;
+  results.site.truncated = queue.length > 0;
 }
 
 async function runDir(dir) {

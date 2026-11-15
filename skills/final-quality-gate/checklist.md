@@ -6,8 +6,9 @@
 ## 1. Structure and process
 
 - [ ] `docs/brief.md`, `docs/plan.md`, `docs/progress.md` exist.
-- [ ] `docs/ia.md`, `docs/design.md`, `docs/data-model.md` exist (backend may be
-      an explicit skip for static sites).
+- [ ] `docs/ia.md`, `docs/design.md`, `docs/frontend-report.md`,
+      `docs/data-model.md` exist (backend may be an explicit skip for static
+      sites).
 - [ ] `docs/seo-report.md`, `docs/performance-report.md`,
       `docs/security-report.md` exist.
 - [ ] `docs/legal-review.md`, `docs/test-report.md`, `docs/deployment.md`,

@@ -4,13 +4,24 @@ node_modules/
 .env
 .env.*
 
-# Generated outputs from the website workflow. Inputs stay tracked.
-docs/brief.md
+# Template for user projects running the website workflow: generated stage
+# outputs are ignored, approved inputs (docs/brief.md, docs/plan.md) and repo
+# documents such as docs/trigger-tests.md stay tracked.
 docs/progress.md
 docs/ia.md
 docs/design.md
 docs/data-model.md
-docs/deployment.md
-docs/handoffs/
-docs/quality-gate.json
+docs/frontend-report.md
+docs/seo-report.md
 docs/seo-audit.json
+docs/performance-report.md
+docs/security-report.md
+docs/legal-review.md
+docs/data-flows.md
+docs/test-report.md
+docs/deployment.md
+docs/monitoring.md
+docs/quality-gate.md
+docs/quality-gate.json
+docs/handoffs/
+docs/runbooks/

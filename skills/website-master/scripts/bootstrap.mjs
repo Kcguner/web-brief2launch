@@ -182,15 +182,27 @@ function run(command, args, timeoutMs = INSTALL_TIMEOUT_MS) {
       clearTimeout(timer);
       resolve(result);
     };
+    // npx spawns its own child; a new process group lets the timeout kill the
+    // whole tree instead of orphaning the grandchild that does the install.
+    const detached = process.platform !== "win32";
     const child = spawn(command, args, {
       stdio: "inherit",
       shell: process.platform === "win32",
+      detached,
       killSignal: "SIGTERM",
     });
+    const killTree = (signal) => {
+      try {
+        if (detached && child.pid) process.kill(-child.pid, signal);
+        else child.kill(signal);
+      } catch {
+        try { child.kill(signal); } catch { /* already gone */ }
+      }
+    };
     const timer = setTimeout(() => {
-      child.kill("SIGTERM");
-      // A child that ignores SIGTERM must not keep the session alive.
-      setTimeout(() => { if (!settled) child.kill("SIGKILL"); }, 5_000).unref();
+      killTree("SIGTERM");
+      // A tree that ignores SIGTERM must not keep the session alive.
+      setTimeout(() => { if (!settled) killTree("SIGKILL"); }, 5_000).unref();
       finish({ code: 1, timedOut: true });
     }, timeoutMs);
     if (typeof timer.unref === "function") timer.unref();

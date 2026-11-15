@@ -53,21 +53,27 @@ excerpt, date). This applies to `docs/frontend-report.md` (Stage 4),
 
 `../final-quality-gate/scripts/gate.mjs` parses only these patterns:
 
-- One line `Project type: <type>`, matched by exact token: `static`,
-  `portfolio`, `brochure`, `blog`, or `web app`. A composite phrase such as
-  `Next.js static export` is not the `static` type. For `static`, `portfolio`,
-  `brochure`, and `blog`, `docs/data-model.md` is optional; every other type
-  must provide it.
+- One line `Project type: <type>`. Canonical types: `static`, `portfolio`,
+  `brochure`, `blog`, `corporate`, `e-commerce`, `saas`, `documentation`,
+  `community`, `web app`, `other`. Matched by exact token, case-insensitive;
+  a composite phrase such as `Next.js static export` is not the `static` type.
+  For `static`, `portfolio`, `brochure`, and `blog`, `docs/data-model.md` is
+  optional; every other type must provide it.
 - Stage status lines, one per stage: `status: done`, `status: in progress`,
-  `status: pending`. The gate fails the structure on `status: blocked`,
-  `status: blocked-manual`, `status: fail`, and `status: failed`. Only lines
-  that start with `status:` (an optional list marker allowed) are read; a
-  Markdown table column named Status is ignored.
-- Checkboxes. Every unchecked item fails the gate: `- [ ]`, `* [ ]`, `+ [ ]`,
-  and `1. [ ]` all count. Write `- [x]` for finished items.
+  `status: pending`, or `status: skip` with a recorded reason. The gate fails
+  the structure on `status: blocked`, `status: blocked-manual`, `status: fail`,
+  and `status: failed`. The status may start the line or appear inside a list
+  item, as in the example below. Table rows (lines starting with `|`) and
+  fenced code blocks are ignored.
+- Checkboxes. Every unchecked item outside fenced code blocks fails the gate:
+  `- [ ]`, `* [ ]`, `+ [ ]`, and `1. [ ]` all count. Write `- [x]` for finished
+  items.
 - No unresolved markers anywhere in `docs/`: `TBD`, `TODO:`, `PLACEHOLDER`,
   `FIXME`, `XXX:`, `lorem ipsum` (case-insensitive). Fenced code blocks are
   skipped, so a report may quote a marker inside ``` without failing.
+- The release verdict is read back from the `Verdict:` line of
+  `docs/quality-gate.md` after the manual checklist walk: a recorded PASS
+  exits `0`, a recorded FAIL exits `1`, no verdict yet exits `3`.
 
 Minimal example:
 
