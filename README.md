@@ -58,11 +58,11 @@ and similar for a global install.
 - Every package is pinned to a full commit SHA, resolved from the upstream tag
   with `git ls-remote --tags` when the list was written:
 
-  | Package | Tag at pin time | Commit |
-  |---|---|---|
-  | `obra/superpowers` | `v7.0.2` | `22f0b463e7a5e579904dd6211a520321035526f7` |
-  | `addyosmani/agent-skills` | `0.6.15` | `8bfcc1f9916f2eea55494d8c1fa7f4bde867dd9e` |
-  | `pbakaus/impeccable` (optional) | `skill-v4.8.0` | `414603bf14c7a344edb466bb1f85690c77ce8b7d` |
+  | Package | Tag at pin time | Commit | License |
+  |---|---|---|---|
+  | `obra/superpowers` | `v7.0.2` | `22f0b463e7a5e579904dd6211a520321035526f7` | MIT |
+  | `addyosmani/agent-skills` | `0.6.15` | `8bfcc1f9916f2eea55494d8c1fa7f4bde867dd9e` | MIT |
+  | `pbakaus/impeccable` (optional) | `skill-v4.8.0` | `414603bf14c7a344edb466bb1f85690c77ce8b7d` | Apache-2.0 |
 
 - Scope is project level by default. `--global` installs into the user
   directory, and only when you ask for it.
@@ -301,7 +301,8 @@ This set references three open skill packs and copies nothing from them:
   direction, craft floor, and design audit used in stage 3.
 
 Install them with the commands above; they keep their own licenses and update
-cadence.
+cadence. superpowers and agent-skills are MIT-licensed and impeccable is
+Apache-2.0; installed copies keep their own licenses.
 
 ## License
 
