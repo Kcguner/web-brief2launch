@@ -93,3 +93,4 @@ Supporting files: `checklist.md` (monthly and quarterly routines).
   keep the backup policy as unverified.
 - Alert delivery cannot be tested: leave the item open and name the person who
   will confirm it.
+- Record failures and lessons in `docs/ledger.md` per `../shared/ledger-rule.md`.

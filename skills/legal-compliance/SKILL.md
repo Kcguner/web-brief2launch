@@ -108,3 +108,4 @@ Supporting files: `checklist.md` (jurisdiction matrix and page contents).
   require explicit written acceptance, and flag it in the final gate.
 - The user asks for legal advice: decline to give a legal opinion; provide the
   checklist and point to a qualified lawyer.
+- Record failures and lessons in `docs/ledger.md` per `../shared/ledger-rule.md`.

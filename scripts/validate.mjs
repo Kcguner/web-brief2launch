@@ -61,6 +61,8 @@ async function main() {
   }
 
   const LOCAL_SKILLS = ["website-master", "website-intake", "seo", "legal-compliance", "monitoring-maintenance", "final-quality-gate"];
+  // Directories under skills/ that hold shared support files, not skills.
+  const SUPPORT_DIRS = new Set(["shared"]);
 
   // Names read from the upstream repositories' file trees on 2026-11-07.
   const VERIFIED = {
@@ -139,12 +141,17 @@ async function main() {
   } catch (e) {
     skillDirError = `skills/ directory missing or unreadable (${e.code ?? e.message})`;
   }
+  skillDirs = skillDirs.filter((d) => !SUPPORT_DIRS.has(d));
 
   const longFiles = [];
   const fmProblems = [];
   const sectionProblems = [];
   const firstRunProblems = [];
   const REQUIRED_SECTIONS = ["Purpose", "Inputs", "Steps", "Checklist", "Completion criteria", "Output", "On failure"];
+
+  for (const name of LOCAL_SKILLS) {
+    if (!skillDirs.includes(name)) fmProblems.push(`${name}: skill folder missing`);
+  }
 
   for (const dir of skillDirs) {
     const file = join(root, "skills", dir, "SKILL.md");
@@ -192,6 +199,7 @@ async function main() {
     "frontend-report.md", "seo-report.md", "performance-report.md",
     "security-report.md", "legal-review.md", "test-report.md", "deployment.md",
     "monitoring.md", "quality-gate.md", "quality-gate.json", "seo-audit.json",
+    "ledger.md",
   ]);
   function isGeneratedDoc(target) {
     if (!/(^|\/)docs\//.test(target)) return false;

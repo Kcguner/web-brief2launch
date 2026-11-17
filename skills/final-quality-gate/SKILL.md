@@ -153,3 +153,5 @@ Report structure:
   Ask for one authoritative re-check.
 - This file was modified to make a failing site pass: that is a process
   violation. Report it and restore the criteria from version control.
+- Record failures and lessons in `docs/ledger.md` per `../shared/ledger-rule.md`.
+  A missing ledger entry for a known failed gate is a process gap worth noting.

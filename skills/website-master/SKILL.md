@@ -13,7 +13,8 @@ delegate it and verify the result.
 
 Supporting files: `reference.md` (information-architecture and backend/data
 checklists), `stages.md` (stage-to-skill map, phase-to-stage map, `docs/progress.md`
-format, and priority rules).
+format, and priority rules), `../shared/ledger-rule.md` (shared ledger and
+safe-work rules).
 
 ## First run
 
@@ -87,7 +88,8 @@ Keep code, commands, paths, numbers, and error strings verbatim in any language.
    At each pause, show what was done, the evidence, what is next, and the risk.
 8. **Record progress** in `docs/progress.md` after each stage: stage, status,
    evidence path, date, open issues, and whether the stage auto-advanced or
-   paused for a decision.
+   paused for a decision. Also append failures and lessons to `docs/ledger.md`
+   per `../shared/ledger-rule.md`.
 9. **Run the release gate** with `../final-quality-gate/SKILL.md` before any
    publish. Release needs a PASS plus explicit user approval.
 10. **Hand off to maintenance** with `../monitoring-maintenance/SKILL.md` after

@@ -166,3 +166,4 @@ brainstorming for open-ended exploration of goals and trade-offs.
 - The brainstorming dependency is unavailable: continue with the question bank
   and note in the brief that open-ended exploration was skipped.
 - The user withholds approval: stop and wait. Do not produce a plan.
+- Record failures and lessons in `docs/ledger.md` per `../shared/ledger-rule.md`.

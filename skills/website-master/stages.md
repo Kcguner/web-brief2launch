@@ -9,10 +9,13 @@ with the pinned command that `scripts/bootstrap.mjs` prints for it, or let the
 bootstrap run it. "optional ext:" never blocks a stage: when it is missing, the
 stage records the fallback evidence in `docs/progress.md`.
 
+All 13 stages, including stages run by external dependency skills, follow
+`../shared/ledger-rule.md` (shared ledger and safe-work rules).
+
 | # | Stage | Skill (in repo / external) | Output | Gate (measurable) |
 |---|-------|----------------------------|--------|-------------------|
 | 0 | Intake & discovery | `../website-intake/SKILL.md` + ext: `brainstorming` | `docs/brief.md` | Brief approved by user |
-| 1 | Planning & analysis | ext: `writing-plans`, `planning-and-task-breakdown` | `docs/plan.md` | Every task has owner role, files, and a verifiable criterion |
+| 1 | Planning & analysis | ext: `writing-plans`, `planning-and-task-breakdown` | `docs/plan.md` | Every task has owner role, files, and a verifiable criterion; the plan includes the Stage 6 SEO audit as an explicit task (criterion: the audit command plus zero errors on indexable pages) |
 | 2 | Information architecture | `reference.md` §Information architecture (Stage 2) | `docs/ia.md` | Sitemap, nav model, URL scheme, and hierarchy recorded and consistent with the approved brief |
 | 3 | UI/UX design | ext: `frontend-ui-engineering` + optional ext: `impeccable` | `docs/design.md` + `DESIGN.md` tokens | Responsive breakpoints defined; WCAG 2.1 AA contrast and focus states; every screen in the flow designed; when `impeccable` is installed, its `audit` runs and findings are resolved or recorded, otherwise the manual accessibility and design checklist evidence is recorded |
 | 4 | Frontend development | ext: `frontend-ui-engineering`, `incremental-implementation` | working app + `docs/frontend-report.md` | Build passes; component inventory matches design; no console errors on primary routes |
@@ -128,4 +131,7 @@ closest column, apply it, and record which column you chose and why in
   test authoring in separate files.
 - Never parallelize: two writers on the same file, migration plus schema change,
   deploy plus DNS change.
+- Bulk edits (a shared template, or more than five pages in one pass) follow the
+  safe-work rules in `../shared/ledger-rule.md`: branch or backup first, then
+  batch and verify.
 - Every parallel phase ends with one reviewer pass and one merged handoff file.

@@ -101,3 +101,4 @@ Supporting files: `checklist.md` (full audit list), `reference.md` (snippets),
   and online validation as not performed.
 - The site is client-rendered and the audit sees an empty shell: report
   rendering as a finding and re-run against a rendered snapshot.
+- Record failures and lessons in `docs/ledger.md` per `../shared/ledger-rule.md`.
