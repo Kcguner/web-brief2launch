@@ -132,10 +132,11 @@ superpowers version this set references.
 | `skills/website-master/stages.md` | Stage map, phase map, `docs/progress.md` format |
 | `skills/website-master/reference.md` | Stage checklists for IA and backend/data |
 | `skills/website-intake/` | Question bank that produces `docs/brief.md` |
-| `skills/seo/` | Technical and on-page SEO, structured data, plus an audit script |
+| `skills/seo/` | Technical and on-page SEO, structured data, plus an audit script (link graph, JavaScript-off check, robots/AI-crawler policy, redirect chains) |
 | `skills/legal-compliance/` | Privacy, cookies, KVKK/GDPR, terms (not legal advice) |
-| `skills/monitoring-maintenance/` | Analytics, errors, uptime, maintenance calendar |
-| `skills/final-quality-gate/` | Release gate: one PASS/FAIL report from every output |
+| `skills/monitoring-maintenance/` | Analytics, errors, uptime, maintenance calendar, Search Console launch baseline |
+| `skills/final-quality-gate/` | Release gate: one PASS/FAIL report from every output; requires a fresh SEO audit artifact and the shared ledger |
+| `skills/shared/ledger-rule.md` | Shared rules for all 13 stages: failure/lesson ledger and safe-work rules (branch before bulk edits, approval before deploy) |
 | `skills/*/checklist.md` | Full per-skill checklists, loaded on demand |
 | `skills/website-master/scripts/bootstrap.mjs` | Fixed, pinned dependency installer used on first run |
 | `scripts/validate.mjs` | Repository self-check: frontmatter, line limits, links |
