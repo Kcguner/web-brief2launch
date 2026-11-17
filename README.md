@@ -20,7 +20,7 @@ approve them.
 npx skills add Kcguner/web-brief2launch --skill '*'
 ```
 
-`--skill '*'` installs all six skills; without it the CLI can prompt per skill
+`--skill '*'` installs all seven skills; without it the CLI can prompt per skill
 and leave a partial install. The CLI asks which agent to target; add
 `-a <agent>` to skip that prompt (ids are in the compatibility table).
 
@@ -98,7 +98,7 @@ If you prefer to install everything yourself, the manual commands below carry
 the same pins as the table above:
 
 ```bash
-# Our skill set, all six skills (not install-tested)
+# Our skill set, all seven skills (not install-tested)
 npx skills add Kcguner/web-brief2launch --skill '*'
 
 # Dependency: superpowers, all skills (not install-tested)
@@ -132,6 +132,7 @@ superpowers version this set references.
 | `skills/website-master/stages.md` | Stage map, phase map, `docs/progress.md` format |
 | `skills/website-master/reference.md` | Stage checklists for IA and backend/data |
 | `skills/website-intake/` | Question bank that produces `docs/brief.md` |
+| `skills/site-audit/` | Read-only audit of an existing site or repo: SEO audit plus a quick technical sweep, one severity-ranked report, fixes only after approval |
 | `skills/seo/` | Technical and on-page SEO, structured data, plus an audit script (link graph, JavaScript-off check, robots/AI-crawler policy, redirect chains) |
 | `skills/legal-compliance/` | Privacy, cookies, KVKK/GDPR, terms (not legal advice) |
 | `skills/monitoring-maintenance/` | Analytics, errors, uptime, maintenance calendar, Search Console launch baseline |
@@ -145,7 +146,7 @@ superpowers version this set references.
 | `SUMMARY.md` | Turkish repository summary and audit notes |
 | `AGENTS.md` | Universal entry point and reading order (clone or manual install only) |
 
-Only six skills are written here. The engineering stages (planning, UI/UX,
+Only seven skills are written here. The engineering stages (planning, UI/UX,
 frontend, backend, performance, security, testing, deployment) are delegated to
 three external skill packs, referenced by name and repository. Information
 architecture and the backend data model use the checklists in
