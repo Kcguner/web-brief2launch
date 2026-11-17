@@ -453,7 +453,7 @@ async function main() {
     const base = `http://127.0.0.1:${port}`;
     const urlPage = (name, extra = "") => `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Fixture ${name}</title><meta name="description" content="A fixture page with a description long enough for the audit script."><link rel="canonical" href="${base}/${name}"><meta property="og:type" content="website"><meta property="og:title" content="Fixture ${name}"><meta property="og:description" content="Fixture."><meta property="og:image" content="${base}/og.png"><meta property="og:url" content="${base}/${name}"><meta name="twitter:card" content="summary"><meta name="twitter:title" content="Fixture ${name}"><meta name="twitter:description" content="Fixture."><meta name="twitter:image" content="${base}/og.png"></head><body><h1>Fixture ${name}</h1><p>Body text long enough to clear the thin content threshold of two hundred characters. This paragraph repeats useful words so the rendered text count is safely above the limit used by the audit script for every fixture page.</p>${extra}</body></html>`;
     const routes = {
-      "/": urlPage("home", `<nav><a href="/nav-only">Nav</a></nav> <a href="/a">A</a> <a href=/b>B unquoted</a> <a href="/redir">Redirect</a> <a href="/noindexed">Noindex</a> <a href="/xrobots">XRobots</a>`),
+      "/": urlPage("home", `<nav><a href="/nav-only">Nav</a></nav> <a href="/a">A</a> <a href=/b>B unquoted</a> <a href="/redir">Redirect</a> <a href="/hop1">Hop</a> <a href="/temp">Temp</a> <a href="/noindexed">Noindex</a> <a href="/xrobots">XRobots</a>`),
       "/a": urlPage("a", `<a href="/deep">Deep</a>`),
       "/b": urlPage("b"),
       "/deep": urlPage("deep"),
@@ -468,6 +468,9 @@ async function main() {
     srv.on("request", (req, res) => {
       const path = req.url.split("?")[0];
       if (path === "/redir") { res.writeHead(302, { location: "/b" }); res.end(); return; }
+      if (path === "/hop1") { res.writeHead(301, { location: "/hop2" }); res.end(); return; }
+      if (path === "/hop2") { res.writeHead(302, { location: "/b" }); res.end(); return; }
+      if (path === "/temp") { res.writeHead(302, { location: "/b" }); res.end(); return; }
       if (path === "/xrobots") {
         res.writeHead(200, { "content-type": "text/html; charset=utf-8", "x-robots-tag": "noindex" });
         res.end(routes[path]);
@@ -532,6 +535,14 @@ async function main() {
       // X-Robots-Tag must feed the same noindex signal as the meta tag.
       const headerNoindexOk = crawl.json?.site?.noindexPages?.some((u) => u.endsWith("/xrobots"));
       if (!headerNoindexOk) { urlMode = "FAIL"; scriptProblems.push("audit.mjs did not read X-Robots-Tag as noindex"); }
+      // Redirect chains: more than one hop is an error, a temporary hop is a warning.
+      const redirectOk = crawl.json?.pages?.some((p) => p.findings?.some((f) => f.rule === "redirect-multi-hop"))
+        && crawl.json.pages.some((p) => p.findings?.some((f) => f.rule === "redirect-not-permanent"));
+      if (!redirectOk) { urlMode = "FAIL"; scriptProblems.push("audit.mjs did not record multi-hop and temporary redirects"); }
+      // A complete crawl verifies the sitemap; a truncated crawl must say otherwise.
+      if (crawl.json?.site?.sitemap?.verified !== true) { urlMode = "FAIL"; scriptProblems.push("audit.mjs did not mark a complete sitemap crawl as verified"); }
+      const truncated = await urlAudit(base, ["--allow-private", "--max", "2"]);
+      if (truncated.json?.site?.sitemap?.verified !== false) { urlMode = "FAIL"; scriptProblems.push("audit.mjs did not mark a truncated sitemap crawl as unverified"); }
     } finally {
       srv.closeAllConnections?.();
       await new Promise((done) => srv.close(done));

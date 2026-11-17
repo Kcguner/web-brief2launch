@@ -13,7 +13,8 @@ review. Tick each item with the evidence path next to it.
 - [ ] AI-crawler policy (GPTBot, ClaudeBot, PerplexityBot, Google-Extended)
       is a recorded user decision.
 - [ ] XML sitemap returns 200 with `Content-Type` containing `xml`.
-- [ ] Sitemap contains only canonical, indexable, 200-status URLs.
+- [ ] Sitemap contains only canonical, indexable, 200-status URLs, with no
+      redirects; a truncated crawl was raised or spot-checked.
 - [ ] No `noindex` meta tag on pages that must rank.
 - [ ] `X-Robots-Tag` headers do not block public assets accidentally (the audit
       folds the header into the same noindex finding as the meta tag).

@@ -57,7 +57,10 @@ Supporting files: `checklist.md` (full audit list), `reference.md` (snippets),
    `site.robots.aiAccess`. A Googlebot-only `Disallow: /` is an error even when
    the wildcard group allows the site.
 6. Check `sitemap.xml`: valid XML, only canonical 200-status URLs, no redirects
-   or 404s, listed in `robots.txt`.
+   or 404s, listed in `robots.txt`. The audit follows sitemap URLs and records
+   `site.sitemap.verified`; when the crawl was truncated, raise `--max` or
+   spot-check the remaining URLs with a status check. A sitemap URL that
+   redirects is a finding: the sitemap must list the final canonical URL.
 7. Check canonical tags: one per page, absolute, self-referencing unless a real
    duplicate exists.
 8. Check Schema.org JSON-LD: `Organization` or `LocalBusiness` on the home page,
@@ -80,7 +83,9 @@ Supporting files: `checklist.md` (full audit list), `reference.md` (snippets),
 12. Check language and region: `lang` attribute present; `hreflang` pairs are
     reciprocal and include `x-default` when multi-language.
 13. Check redirects: one hop, 301 to the final canonical URL, HTTPS and
-    host-normalized.
+    host-normalized. The audit records each followed chain in the page entry
+    (`redirects`); more than one hop is an error, and a 302/307 on a permanent
+    move is a warning.
 14. Write `docs/seo-report.md` in the user's language: findings by severity,
     the fix for each, and the evidence path.
 

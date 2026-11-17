@@ -336,6 +336,19 @@ function auditHtml(html, pageUrl, status = 200, xRobots = "") {
   return entry;
 }
 
+function recordRedirects(entry, redirects) {
+  if (!redirects?.length) return;
+  entry.redirects = redirects;
+  if (redirects.length > 1) {
+    entry.findings.push({ level: "error", rule: "redirect-multi-hop", detail: `Page redirects ${redirects.length} times.` });
+    results.errors++;
+  }
+  if (redirects.some((r) => r.status !== 301 && r.status !== 308)) {
+    entry.findings.push({ level: "warning", rule: "redirect-not-permanent", detail: "Temporary redirect; use 301 or 308 for a permanent move." });
+    results.warnings++;
+  }
+}
+
 const MAX_BYTES = 2 * 1024 * 1024;
 const CONCURRENCY = 4;
 
@@ -378,13 +391,14 @@ async function fetchText(url, { timeoutMs = 20000, htmlOnly = false, maxBytes = 
   const timer = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
     let current = url;
+    const redirects = [];
     for (let hop = 0; ; hop += 1) {
       const res = await fetch(current, { redirect: "manual", signal: ctrl.signal, headers: { "user-agent": "webmaster-skill-seo-audit/0.1" } });
       if (REDIRECT_CODES.has(res.status)) {
         const location = res.headers.get("location");
         try { await res.body?.cancel(); } catch { /* ignore */ }
         if (!location) {
-          return { status: res.status, url: current, contentType: "", xRobots: res.headers.get("x-robots-tag") || "", text: "", truncated: false, skipped: false };
+          return { status: res.status, url: current, contentType: "", xRobots: res.headers.get("x-robots-tag") || "", text: "", truncated: false, skipped: false, redirects };
         }
         if (hop >= MAX_REDIRECTS) throw new Error(`Too many redirects (>${MAX_REDIRECTS}) starting at ${url}`);
         let next;
@@ -397,6 +411,7 @@ async function fetchText(url, { timeoutMs = 20000, htmlOnly = false, maxBytes = 
           throw new Error(`Refusing redirect to private or loopback host "${next.hostname}" from ${current}. Pass --allow-private to override.`);
         }
         await assertResolvesPublic(next.hostname);
+        redirects.push({ status: res.status, location: next.href });
         current = next.href;
         continue;
       }
@@ -404,10 +419,10 @@ async function fetchText(url, { timeoutMs = 20000, htmlOnly = false, maxBytes = 
       const xRobots = res.headers.get("x-robots-tag") || "";
       if (htmlOnly && contentType && !/text\/html|application\/xhtml\+xml/.test(contentType)) {
         try { await res.body?.cancel(); } catch { /* ignore */ }
-        return { status: res.status, url: current, contentType, xRobots, skipped: true, text: "", truncated: false };
+        return { status: res.status, url: current, contentType, xRobots, skipped: true, text: "", truncated: false, redirects };
       }
       const { text, truncated } = await readLimited(res, maxBytes);
-      return { status: res.status, url: current, contentType, xRobots, text, truncated, skipped: false };
+      return { status: res.status, url: current, contentType, xRobots, text, truncated, skipped: false, redirects };
     }
   } finally {
     clearTimeout(timer);
@@ -547,6 +562,7 @@ async function runUrl(base) {
 
   const homeEntry = auditHtml(home.text, startUrl, home.status, home.xRobots);
   if (home.truncated) homeEntry.truncated = true;
+  recordRedirects(homeEntry, home.redirects);
 
   const seen = new Set([pageKey(new URL(startUrl))]);
   const queue = [];
@@ -640,12 +656,16 @@ async function runUrl(base) {
       const entry = auditHtml(res.text, res.url || item.url, res.status, res.xRobots);
       if (res.url && res.url !== item.url) entry.requestedUrl = item.url;
       if (res.truncated) entry.truncated = true;
+      recordRedirects(entry, res.redirects);
       extractLinks(res.text, res.url || item.url);
     }
   }
   if (robotsSkipped > 0) results.site.robotsSkipped = robotsSkipped;
   results.site.linksDiscovered = seen.size;
   results.site.truncated = queue.length > 0;
+  if (results.site.sitemap && typeof results.site.sitemap.urls === "number") {
+    results.site.sitemap.verified = !results.site.truncated;
+  }
 
   // Internal-link graph from the crawled edges. Self-loops do not count as
   // inbound. Orphan and depth errors are raised only on a complete crawl; a
