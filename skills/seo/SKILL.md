@@ -40,7 +40,10 @@ Supporting files: `checklist.md` (full audit list), `reference.md` (snippets),
 4. Check heading hierarchy: exactly one H1 per page, no skipped levels, headings
    used for structure not styling.
 5. Check `robots.txt`: allows intended crawling, blocks admin and search-result
-   pages, links the sitemap.
+   pages, links the sitemap. The robots.txt policy for AI crawlers (GPTBot,
+   ClaudeBot, PerplexityBot, Google-Extended) must be a recorded, deliberate
+   user decision (allow or block, with a reason in `docs/seo-report.md`), never
+   a silent default; see reference.md.
 6. Check `sitemap.xml`: valid XML, only canonical 200-status URLs, no redirects
    or 404s, listed in `robots.txt`.
 7. Check canonical tags: one per page, absolute, self-referencing unless a real

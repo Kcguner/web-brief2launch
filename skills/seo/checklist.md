@@ -9,6 +9,8 @@ review. Tick each item with the evidence path next to it.
 - [ ] `User-agent: *` block allows the public site.
 - [ ] `Sitemap:` line points to the absolute sitemap URL.
 - [ ] No `Disallow: /` left from staging.
+- [ ] AI-crawler policy (GPTBot, ClaudeBot, PerplexityBot, Google-Extended)
+      is a recorded user decision.
 - [ ] XML sitemap returns 200 with `Content-Type` containing `xml`.
 - [ ] Sitemap contains only canonical, indexable, 200-status URLs.
 - [ ] No `noindex` meta tag on pages that must rank.

@@ -37,6 +37,19 @@ Disallow: /search
 Sitemap: https://example.com/sitemap.xml
 ```
 
+## AI crawlers
+
+Ask the user once whether AI crawlers may access the site; record the decision
+and reason in `docs/seo-report.md`. One line per bot:
+
+- GPTBot: OpenAI training.
+- ClaudeBot: Anthropic training.
+- PerplexityBot: Perplexity indexing/citation.
+- Google-Extended: Google AI training opt-out; does not affect Google Search
+  ranking or indexing.
+
+llms.txt: optional, effect unproven, low priority.
+
 ## sitemap.xml
 
 ```xml
