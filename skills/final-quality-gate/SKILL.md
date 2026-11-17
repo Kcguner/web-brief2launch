@@ -24,8 +24,8 @@ own machine-readable output, not an input.
 - `docs/brief.md`, `docs/plan.md`, `docs/progress.md`
 - `docs/ia.md`, `docs/design.md`, `docs/frontend-report.md`,
   `docs/data-model.md`
-- `docs/seo-report.md`, `docs/performance-report.md`,
-  `docs/security-report.md`
+- `docs/seo-report.md`, `docs/seo-audit.json` (Stage 6 machine output),
+  `docs/performance-report.md`, `docs/security-report.md`
 - `docs/legal-review.md`, `docs/test-report.md`, `docs/deployment.md`,
   `docs/monitoring.md`
 
@@ -53,9 +53,18 @@ Every item there must still be resolved or accepted in writing before release.
 3. Verify evidence, not prose. For each item, open the referenced report and
    confirm the number or artifact it claims. A claim without an artifact is a
    `fail`.
-4. Re-run the live checks you can run: status codes on the main routes, security
-   headers, robots and sitemap, Core Web Vitals on mobile, and the primary
-   conversion flow in a browser.
+4. Re-run the live checks against the release candidate instead of trusting
+   the stage reports. For SEO, re-run the audit script:
+   `node <skills-dir>/seo/scripts/audit.mjs --url <release-candidate> --out docs/seo-audit-release.json`
+   where `<skills-dir>` is the installed skills root (e.g. `.agents/skills`).
+   Read both `docs/seo-audit.json` (stage evidence) and the fresh
+   `docs/seo-audit-release.json`. The SEO row is `fail` if the stage artifact
+   `docs/seo-audit.json` is missing or unreadable, or if the fresh audit
+   reports any error-level finding on an indexable page. Attach both JSON
+   paths as evidence. Without network access, mark the row `manual-required`
+   and give the user the exact command above. Also re-check status codes on
+   the main routes, security headers, robots and sitemap, Core Web Vitals on
+   mobile, and the primary conversion flow in a browser.
 5. Check legal status. If `docs/legal-review.md` says counsel review is pending,
    the item is `fail` for regulated projects and `accepted-risk` only with the
    user's written acceptance.

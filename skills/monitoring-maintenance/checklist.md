@@ -8,7 +8,10 @@
 - [ ] Broken-link scan on the main navigation and conversion paths.
 - [ ] Check certificate expiry (≥ 30 days remaining) and domain expiry (≥ 60).
 - [ ] Review analytics: traffic sources, conversion rate, drop-off pages.
-- [ ] Review search performance: impressions, clicks, index coverage errors.
+- [ ] Review search performance against the launch baseline: impressions,
+      clicks, indexed pages, coverage errors (baseline recorded in
+      `docs/monitoring.md`).
+- [ ] Post-deploy index check ran within a week of the last production deploy.
 - [ ] Restore-test the backup on a non-production environment (quarterly is the
       minimum; monthly is better for transactional sites).
 - [ ] Review storage and cost trend.
@@ -82,3 +85,11 @@ What to record and what to fix so it cannot recur.
 | Security | | | | next business day |
 | Backups | | | | weekly |
 | Analytics | | | | monthly |
+
+## Search baseline table
+
+Record the launch baseline and each monthly reading in `docs/monitoring.md`.
+
+| Date | Clicks | Impressions | Indexed pages | Source |
+|------|--------|-------------|---------------|--------|
+| | | | | |

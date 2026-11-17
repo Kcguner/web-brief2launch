@@ -32,6 +32,8 @@
 - [ ] No accidental `noindex` on public pages.
 - [ ] Redirect map applied; single-hop 301s.
 - [ ] `lang` set; `hreflang` reciprocal if multilingual.
+- [ ] Fresh release-candidate audit re-run recorded; zero error-level findings
+      on indexable pages; stage artifact `docs/seo-audit.json` present.
 
 ## 3. Performance
 
@@ -111,6 +113,9 @@
 - [ ] Environment variables set in the host; none in the repo.
 - [ ] Cache invalidation strategy documented.
 - [ ] Maintenance or launch window agreed with the user.
+- [ ] Search Console (or equivalent webmaster tool) property verified and a
+      launch baseline measurement scheduled with an owner (recorded in
+      `docs/monitoring.md`).
 
 ## 9. Monitoring
 

@@ -35,8 +35,16 @@ Supporting files: `checklist.md` (monthly and quarterly routines).
 4. **Performance watch.** Enable real-user Core Web Vitals reporting if the
    analytics tool supports it, or add a synthetic check weekly. Record LCP, CLS,
    and INP thresholds from the performance report.
-5. **SEO watch.** Track index status, sitemap errors, and a small set of target
-   queries monthly.
+5. **SEO watch.** Verify the site in Google Search Console or the user's
+   equivalent webmaster tool. Record a launch baseline (clicks, impressions,
+   indexed-page count for the first available period) in `docs/monitoring.md`.
+   Within one week of each production deploy, check index coverage of the
+   changed URLs and sitemap errors (the post-deploy index check). Then monthly,
+   compare against the baseline and track the target queries. A CSV export or
+   the user reading the console manually is enough; direct API access is not
+   required. Without tool access, mark this `blocked-manual` and give the exact
+   console steps: add the site as a property, complete ownership verification,
+   submit the sitemap URL, then read Performance and Page indexing reports.
 6. **Security watch.** Enable dependency alerts, certificate-expiry alerts, and
    a monthly secret scan.
 7. **Backups.** Confirm schedule, retention, and a restore test date. Record the

@@ -199,7 +199,7 @@ async function main() {
     "frontend-report.md", "seo-report.md", "performance-report.md",
     "security-report.md", "legal-review.md", "test-report.md", "deployment.md",
     "monitoring.md", "quality-gate.md", "quality-gate.json", "seo-audit.json",
-    "ledger.md",
+    "seo-audit-release.json", "ledger.md",
   ]);
   function isGeneratedDoc(target) {
     if (!/(^|\/)docs\//.test(target)) return false;
