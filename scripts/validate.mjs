@@ -418,6 +418,26 @@ async function main() {
     // PASS. Treat 3 as success here and keep the summary in the detail line.
     if (gateCode !== 0 && gateCode !== 3) scriptProblems.push(`gate.mjs on fixture exited ${gateCode}: ${gateSummary}`);
 
+    // Regression: --dir mode must parse robots.txt and sitemap.xml files.
+    let dirFiles = "FAIL";
+    await writeFile(join(sandbox, "site", "robots.txt"), "User-agent: Googlebot\nDisallow: /\n", "utf8");
+    await writeFile(join(sandbox, "site", "sitemap.xml"), '<?xml version="1.0"?><urlset><url><loc>https://example.com/missing</loc></url></urlset>', "utf8");
+    const dirFilesOut = join(sandbox, "seo-dir-files.json");
+    let dirFilesCode = 0;
+    try { await run(process.execPath, [audit, "--dir", join(sandbox, "site"), "--out", dirFilesOut], { timeout: 30000 }); }
+    catch (e) { dirFilesCode = e.code ?? 0; }
+    try {
+      const j = JSON.parse(await readFile(dirFilesOut, "utf8"));
+      const ok = dirFilesCode === 1
+        && j.site?.robots?.googlebotAllowed === false
+        && j.site?.sitemap?.verified === false
+        && (j.site?.errors || []).some((f) => f.rule === "sitemap-url-not-found");
+      if (ok) dirFiles = "ok";
+      else scriptProblems.push("audit.mjs --dir did not flag the Googlebot robots block and the missing sitemap file");
+    } catch (e) { scriptProblems.push(`audit.mjs --dir robots/sitemap regression failed: ${e.message}`); }
+    await rm(join(sandbox, "site", "robots.txt"));
+    await rm(join(sandbox, "site", "sitemap.xml"));
+
     // Regression: the Stage 6 machine output is structural, so removing it fails.
     await rm(join(sandbox, "docs", "seo-audit.json"));
     let missingAuditCode = 0;
@@ -556,7 +576,7 @@ async function main() {
       await new Promise((done) => srv.close(done));
     }
 
-    fixtureNote = `audit: ${auditSummary || "no output"} | gate: ${gateSummary || "no output"} | regressions: blocked=${blockedCode === 1 ? "ok" : "FAIL"}, verdict=${verdictCode === 0 ? "ok" : "FAIL"}, url-mode=${urlMode}`;
+    fixtureNote = `audit: ${auditSummary || "no output"} | gate: ${gateSummary || "no output"} | regressions: blocked=${blockedCode === 1 ? "ok" : "FAIL"}, verdict=${verdictCode === 0 ? "ok" : "FAIL"}, dir-files=${dirFiles}, url-mode=${urlMode}`;
   } catch (e) {
     scriptProblems.push(`fixture run failed: ${e.message}`);
   }

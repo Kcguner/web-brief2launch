@@ -10,6 +10,8 @@
 // Checks per page: title, meta description, canonical (count and absolute),
 // H1 count, heading order, lang, Open Graph (incl. image size), Twitter Card,
 // JSON-LD parse. Site-level: robots.txt, sitemap.xml, duplicate titles.
+// In --dir mode robots.txt and sitemap.xml are parsed as files at the build
+// root; HTTP status and redirect checks remain live-only (--url).
 // Discovery: home page links plus sitemap.xml URLs, then breadth-first through
 // discovered same-origin links up to --max pages. Redirects are followed
 // manually and every hop is re-checked against the private-host blocklist.
@@ -33,7 +35,9 @@ Options:
                      sitemap.xml, seeds discovery from both, then crawls
                      same-origin pages breadth-first. Redirects are followed
                      manually; every hop is re-checked against the blocklist.
-  --dir <build-dir>  Audit HTML files in a local directory instead.
+  --dir <build-dir>  Audit HTML files in a local directory instead. Also parses
+                     robots.txt and sitemap.xml at the directory root; HTTP
+                     status and redirect checks stay live-only (--url).
   --out <file>       Report path. Default: seo-audit.json (in --dir mode it is
                      resolved next to <build-dir>; otherwise in the current dir).
   --max <N>          Maximum pages to audit (default 30).
@@ -42,8 +46,9 @@ Options:
                      Off by default to block SSRF.
 
 Checks title, meta description, canonical, H1, heading order, lang, Open Graph,
-Twitter Card, and JSON-LD per page. Checks robots.txt and sitemap.xml when
---url is used, and computes an internal-link graph (site.linkGraph): inbound
+Twitter Card, and JSON-LD per page. Checks robots.txt and sitemap.xml in both
+modes (as files in --dir mode), and computes an internal-link graph
+(site.linkGraph): inbound
 and contextual inbound counts, click depth, orphan pages, deep pages, and
 pages linked only from navigation/footer. --dir mode has no link graph.
 Writes a JSON report. Exit 1 if errors exist, 2 on bad usage.
@@ -721,6 +726,55 @@ async function runDir(dir) {
   }
   results.site.filesTotal = files.length;
   results.site.truncated = files.length > rels.length;
+
+  // robots.txt and sitemap.xml are parsed as files when present at the build
+  // root. HTTP status, redirects, and live serving stay live-only checks.
+  // The .invalid host is a parsing base only; nothing is fetched in dir mode.
+  const fileKeys = new Set(files.map((f) => pageKey(new URL("https://dir.invalid/" + relPath(f)))));
+  let robots = null;
+  try {
+    const text = await readFile(join(root, "robots.txt"), "utf8");
+    robots = parseRobots(text);
+    const blocksAll = !robotsAllows("/", robots.groups);
+    const googlebotAllowed = robotsAllows("/", robots.groups, "googlebot");
+    const aiBots = ["gptbot", "claudebot", "perplexitybot", "google-extended"];
+    const aiAccess = Object.fromEntries(aiBots.map((b) => [b, robotsAllows("/", robots.groups, b)]));
+    results.site.robots = { source: "file", hasSitemap: robots.sitemaps.length > 0, blocksAll, googlebotAllowed, aiAccess };
+    if (blocksAll) addSiteError("robots-blocks-all", "robots.txt disallows the whole site.");
+    if (!googlebotAllowed) addSiteError("robots-blocks-googlebot", "robots.txt disallows Googlebot.");
+  } catch (e) {
+    results.site.robots = { source: "file", missing: true };
+    addSiteWarning("robots-missing", `No readable robots.txt at the build root (${e.code || e.message}).`);
+  }
+
+  try {
+    const xml = await readFile(join(root, "sitemap.xml"), "utf8");
+    let locs = locsOf(xml);
+    if (/<sitemapindex/i.test(xml)) {
+      const children = locs.slice(0, 10);
+      locs = [];
+      for (const child of children) {
+        try {
+          const p = new URL(child, "https://dir.invalid").pathname;
+          const childPath = resolve(root, "." + p);
+          if (!childPath.startsWith(root)) continue;
+          locs.push(...locsOf(await readFile(childPath, "utf8")));
+        } catch { /* a broken child sitemap surfaces through the url count */ }
+      }
+    }
+    results.site.sitemap = { source: "file", urls: locs.length, absolute: locs.every((u) => /^https?:\/\//i.test(u)), verified: false };
+    if (locs.length === 0) addSiteError("sitemap-empty", "sitemap.xml has no <loc> entries.");
+    for (const loc of locs) {
+      let key;
+      try { key = pageKey(new URL(loc, "https://dir.invalid")); }
+      catch { addSiteError("sitemap-invalid-loc", `Invalid sitemap URL: ${loc}`); continue; }
+      if (!fileKeys.has(key)) addSiteError("sitemap-url-not-found", `${loc} has no matching file in the build directory.`);
+    }
+    if (robots && robots.sitemaps.length === 0) addSiteWarning("sitemap-not-in-robots", "robots.txt does not reference a sitemap.");
+  } catch (e) {
+    results.site.sitemap = { source: "file", missing: true };
+    addSiteWarning("sitemap-missing", `No readable sitemap.xml at the build root (${e.code || e.message}).`);
+  }
 }
 
 async function writeReport(outPath, payload) {

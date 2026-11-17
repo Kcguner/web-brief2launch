@@ -27,6 +27,8 @@ Supporting files: `checklist.md` (full audit list), `reference.md` (snippets),
    Installed skills live under `.agents/skills/<name>/`, so `<skill-folder>` is
    `.agents/skills/seo` (or this folder in a clone). With no network access, run
    it against a local build directory with `--dir ./dist --out docs/seo-audit.json`.
+   In `--dir` mode the script also parses `robots.txt` and `sitemap.xml` at the
+   build root (file checks only; HTTP status and redirects stay live-only).
 2. Read the JSON. Note every page with a missing or duplicated title,
    description, canonical, H1, or Open Graph tag.
    **JavaScript-off check.** The audit reads raw HTML and never executes
@@ -61,6 +63,9 @@ Supporting files: `checklist.md` (full audit list), `reference.md` (snippets),
    `site.sitemap.verified`; when the crawl was truncated, raise `--max` or
    spot-check the remaining URLs with a status check. A sitemap URL that
    redirects is a finding: the sitemap must list the final canonical URL.
+   In `--dir` mode each sitemap URL is matched against the build files
+   (`sitemap-url-not-found`); `verified` stays false because URL statuses
+   are not checked offline.
 7. Check canonical tags: one per page, absolute, self-referencing unless a real
    duplicate exists.
 8. Check Schema.org JSON-LD: `Organization` or `LocalBusiness` on the home page,
@@ -133,7 +138,8 @@ Supporting files: `checklist.md` (full audit list), `reference.md` (snippets),
 ## On failure
 
 - No network access: run the audit with `--dir` on the build output, and list
-  the live-only checks (redirects, status codes, robots.txt) as manual steps.
+  the live-only checks (redirects, HTTP status codes, live robots/sitemap
+  serving) as manual steps.
 - No build directory either: give the user the checklist and the exact commands
   to run, and mark the stage `blocked-manual`.
 - Site is behind auth or a CDN block: ask for a bypass token or a staging URL
