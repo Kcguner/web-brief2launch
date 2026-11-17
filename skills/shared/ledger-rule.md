@@ -7,10 +7,13 @@ skills. Referenced from `../website-master/stages.md`. This is not a skill.
 
 - One shared file for the whole project: `docs/ledger.md`. Every stage appends
   to this one file. Never create per-stage ledgers.
+- Create the file at stage 0, before any work. The release gate fails on a
+  missing or empty ledger.
 - Line format: `- YYYY-MM-DD | stage N | action | error (verbatim) | lesson`.
-- Only failures, errors, and lessons get entries: a failed command, a failed
-  gate, a wrong assumption, a fix that took two tries. Quote the error text
-  verbatim so a later stage can search for it.
+- Failures, errors, and lessons get entries: a failed command, a failed gate,
+  a wrong assumption, a fix that took two tries. Quote the error text verbatim
+  so a later stage can search for it. A stage with no failures records one
+  line: `- YYYY-MM-DD | stage N | no failures | — | —`.
 - Successes stay in `docs/progress.md`; do not duplicate them here.
 - Before starting a stage, skim the ledger for lessons from earlier stages.
 

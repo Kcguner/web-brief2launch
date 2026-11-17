@@ -28,6 +28,7 @@ own machine-readable output, not an input.
   `docs/performance-report.md`, `docs/security-report.md`
 - `docs/legal-review.md`, `docs/test-report.md`, `docs/deployment.md`,
   `docs/monitoring.md`
+- `docs/ledger.md` (shared failure/lesson log per `../shared/ledger-rule.md`)
 
 Other inputs: the staging or production URL, deploy access, and a runnable
 terminal. A missing capability alone downgrades the affected rows to

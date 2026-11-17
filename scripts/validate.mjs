@@ -396,7 +396,7 @@ async function main() {
     await writeFile(join(sandbox, "site", "about.html"),
       page.replace("Fixture page for validation", "About the fixture site").replace('<link rel="canonical" href="https://example.com/">', '<link rel="canonical" href="https://example.com/about">'), "utf8");
 
-    const docs = ["brief", "plan", "ia", "design", "frontend-report", "data-model", "seo-report", "performance-report", "security-report", "legal-review", "test-report", "deployment", "monitoring"];
+    const docs = ["brief", "plan", "ia", "design", "frontend-report", "data-model", "seo-report", "performance-report", "security-report", "legal-review", "test-report", "deployment", "monitoring", "ledger"];
     for (const d of docs) {
       await writeFile(join(sandbox, "docs", `${d}.md`), `# ${d}\n\nMeasured result for this stage, recorded with the command output that produced it.\nThe evidence below was captured on this run and is reproducible from a clean checkout.\n\n- Command: (recorded)\n- Result: pass\n- Evidence: command output stored with the stage\n`, "utf8");
     }
@@ -425,6 +425,14 @@ async function main() {
     catch (e) { missingAuditCode = e.code ?? 0; }
     if (missingAuditCode !== 1) scriptProblems.push(`gate.mjs missed a missing seo-audit.json (exit ${missingAuditCode}, want 1)`);
     await writeFile(join(sandbox, "docs", "seo-audit.json"), JSON.stringify({ pages: [], errors: 0, warnings: 0 }), "utf8");
+
+    // Regression: the shared ledger is structural, so removing it fails.
+    await rm(join(sandbox, "docs", "ledger.md"));
+    let missingLedgerCode = 0;
+    try { await run(process.execPath, [gate, "--docs", join(sandbox, "docs"), "--out", gateOut], { timeout: 30000 }); }
+    catch (e) { missingLedgerCode = e.code ?? 0; }
+    if (missingLedgerCode !== 1) scriptProblems.push(`gate.mjs missed a missing ledger.md (exit ${missingLedgerCode}, want 1)`);
+    await writeFile(join(sandbox, "docs", "ledger.md"), "# Ledger\n\n- 2026-01-01 | stage 0 | no failures | — | —\n", "utf8");
 
     // Regression: a blocked status inside a list item (the stages.md example
     // format) must fail the structure, not slip through the parser.

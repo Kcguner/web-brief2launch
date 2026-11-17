@@ -81,6 +81,9 @@ Supporting files: `checklist.md` (monthly and quarterly routines).
 - A restore from backup succeeded on a non-production environment and the date
   is recorded.
 - The monthly calendar covers the next three months with owners.
+- The search property is verified and the launch baseline (clicks,
+  impressions, indexed pages) is recorded in `docs/monitoring.md`, or the item
+  is `blocked-manual` with the exact console steps for the user.
 - No monitoring item depends on a tool the user has not authorized.
 
 ## Output

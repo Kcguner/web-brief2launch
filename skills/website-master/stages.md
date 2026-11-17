@@ -26,7 +26,7 @@ All 13 stages, including stages run by external dependency skills, follow
 | 9 | Legal & compliance | `../legal-compliance/SKILL.md` | `docs/legal-review.md` | Privacy, cookie, KVKK/GDPR, terms pages published and linked; counsel sign-off recorded |
 | 10 | Testing & QA | ext: `test-driven-development`, `browser-testing-with-devtools` | `docs/test-report.md` | Primary flows, 404/500, forms, and mobile viewport pass on staging |
 | 11 | Deployment | ext: `ci-cd-and-automation`, `shipping-and-launch` | `docs/deployment.md` | DNS + SSL verified, staging→prod pipeline runs, rollback rehearsed |
-| 12 | Monitoring & maintenance | `../monitoring-maintenance/SKILL.md` + ext: `observability-and-instrumentation` | `docs/monitoring.md` | Analytics, error tracking, uptime check live; monthly calendar owned; a test alert delivered and acknowledged; a backup restore test dated |
+| 12 | Monitoring & maintenance | `../monitoring-maintenance/SKILL.md` + ext: `observability-and-instrumentation` | `docs/monitoring.md` | Analytics, error tracking, uptime check live; monthly calendar owned; a test alert delivered and acknowledged; a backup restore test dated; search property verified and launch baseline recorded |
 | — | Release gate | `../final-quality-gate/SKILL.md` | `docs/quality-gate.md` | PASS + user approval |
 
 ## Phase to stage map
@@ -77,6 +77,9 @@ excerpt, date). This applies to `docs/frontend-report.md` (Stage 4),
 - The release verdict is read back from the `Verdict:` line of
   `docs/quality-gate.md` after the manual checklist walk: a recorded PASS
   exits `0`, a recorded FAIL exits `1`, no verdict yet exits `3`.
+
+The gate also requires `docs/seo-audit.json` (parseable, with a `pages` array)
+and a non-empty `docs/ledger.md`; a missing or empty one fails the structure.
 
 Minimal example:
 

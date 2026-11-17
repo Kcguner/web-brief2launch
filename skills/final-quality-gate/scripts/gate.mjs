@@ -231,6 +231,16 @@ try {
   report.missing.push("seo-audit.json");
 }
 
+// The shared ledger is a process requirement for all 13 stages. A missing or
+// empty file means failures and lessons were not recorded (see
+// skills/shared/ledger-rule.md); a clean project records no-failures lines.
+try {
+  const ledgerText = await readFile(join(docsDir, "ledger.md"), "utf8");
+  if (!ledgerText.trim()) report.unresolved.push({ file: "ledger.md", detail: "empty (record failures and lessons, or no-failures lines)" });
+} catch (e) {
+  report.missing.push("ledger.md");
+}
+
 if (report.missing.length || report.unresolved.length) report.structuralVerdict = "FAIL";
 
 // The release verdict is written by the manual checklist walk into
