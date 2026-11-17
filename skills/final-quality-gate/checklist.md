@@ -32,8 +32,10 @@
 - [ ] No accidental `noindex` on public pages.
 - [ ] Redirect map applied; single-hop 301s.
 - [ ] `lang` set; `hreflang` reciprocal if multilingual.
-- [ ] Fresh release-candidate audit re-run recorded; zero error-level findings
-      on indexable pages; stage artifact `docs/seo-audit.json` present.
+- [ ] Fresh release-candidate audit re-run recorded; zero error-level findings,
+      including `site.errors`; every `site.noindexPages` URL is intentional and
+      recorded in `docs/seo-report.md`; stage artifact `docs/seo-audit.json`
+      present.
 
 ## 3. Performance
 

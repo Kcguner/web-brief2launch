@@ -63,7 +63,9 @@ Supporting files: `checklist.md` (full audit list), `reference.md` (snippets),
    Validate with a rich-results testing tool and record the result.
 9. Check Open Graph and Twitter Card tags on every shareable page, with an image
    of at least 1200×630.
-10. Check indexability: no accidental `noindex`, no `Disallow: /`, no soft 404s.
+10. Check indexability: no accidental `noindex`, no `Disallow: /`, no soft
+    404s. Record every intentionally noindexed URL in `docs/seo-report.md`;
+    the release gate compares `site.noindexPages` against that list.
 11. Check internal linking: no orphan pages, descriptive anchor text, no
     click-depth above three. In `--url` mode read `site.linkGraph` from the
     JSON: `orphans`, `inbound` counts, measured `depth`, and `navOnlyPages`.
@@ -104,8 +106,10 @@ Supporting files: `checklist.md` (full audit list), `reference.md` (snippets),
 ## Completion criteria
 
 - `docs/seo-report.md` exists with severity-tagged findings and evidence.
-- Automated audit reports zero errors for title, description, canonical, H1, and
-  Open Graph on indexable pages.
+- Automated audit reports zero errors, including `site.errors`, for title,
+  description, canonical, H1, and Open Graph on every crawled page; errors on
+  an intentionally noindexed page are accepted only with a written reason in
+  `docs/seo-report.md`.
 - `sitemap.xml` and `robots.txt` return HTTP 200 and are mutually consistent.
 - Schema.org validation returns zero errors on the home, article, and product
   templates that exist.

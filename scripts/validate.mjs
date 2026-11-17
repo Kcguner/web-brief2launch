@@ -444,12 +444,13 @@ async function main() {
     const base = `http://127.0.0.1:${port}`;
     const urlPage = (name, extra = "") => `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Fixture ${name}</title><meta name="description" content="A fixture page with a description long enough for the audit script."><link rel="canonical" href="${base}/${name}"><meta property="og:type" content="website"><meta property="og:title" content="Fixture ${name}"><meta property="og:description" content="Fixture."><meta property="og:image" content="${base}/og.png"><meta property="og:url" content="${base}/${name}"><meta name="twitter:card" content="summary"><meta name="twitter:title" content="Fixture ${name}"><meta name="twitter:description" content="Fixture."><meta name="twitter:image" content="${base}/og.png"></head><body><h1>Fixture ${name}</h1><p>Body text long enough to clear the thin content threshold of two hundred characters. This paragraph repeats useful words so the rendered text count is safely above the limit used by the audit script for every fixture page.</p>${extra}</body></html>`;
     const routes = {
-      "/": urlPage("home", `<nav><a href="/nav-only">Nav</a></nav> <a href="/a">A</a> <a href=/b>B unquoted</a> <a href="/redir">Redirect</a>`),
+      "/": urlPage("home", `<nav><a href="/nav-only">Nav</a></nav> <a href="/a">A</a> <a href=/b>B unquoted</a> <a href="/redir">Redirect</a> <a href="/noindexed">Noindex</a>`),
       "/a": urlPage("a", `<a href="/deep">Deep</a>`),
       "/b": urlPage("b"),
       "/deep": urlPage("deep"),
       "/nav-only": urlPage("nav-only"),
       "/sitemap-only": urlPage("sitemap-only"),
+      "/noindexed": urlPage("noindexed").replace("</head>", '<meta name="robots" content="noindex"></head>'),
       "/private/secret": urlPage("secret"),
       "/robots.txt": `User-agent: *\nAllow: /\nDisallow: /private/\n\nSitemap: ${base}/sitemap.xml\n`,
       "/sitemap.xml": `<?xml version="1.0"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>${base}/a</loc></url><url><loc>${base}/sitemap-only</loc></url><url><loc>${base}/private/secret</loc></url></urlset>`,
@@ -504,6 +505,9 @@ async function main() {
         && graph.navOnlyPages.includes("/nav-only")
         && graph.deepPages.length === 0;
       if (!graphOk) { urlMode = "FAIL"; scriptProblems.push("audit.mjs url-mode link-graph regression failed (orphan/inbound/contextual/nav-only/depth checks)"); }
+      // Noindex regression: the audit marks the page and lists it site-wide.
+      const noindexOk = crawl.json?.site?.noindexPages?.some((u) => u.endsWith("/noindexed"));
+      if (!noindexOk) { urlMode = "FAIL"; scriptProblems.push("audit.mjs did not list a noindex page in site.noindexPages"); }
     } finally {
       srv.closeAllConnections?.();
       await new Promise((done) => srv.close(done));

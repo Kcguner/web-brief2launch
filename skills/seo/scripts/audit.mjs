@@ -318,7 +318,10 @@ function auditHtml(html, pageUrl, status = 200) {
     const value = content.toLowerCase();
     return /\bnoindex\b/.test(value) || /\bnone\b/.test(value);
   });
-  if (noindex) push("warning", "noindex", "Page declares noindex.");
+  if (noindex) {
+    push("warning", "noindex", "Page or response declares noindex.");
+    entry.noindex = true;
+  }
 
   const imgs = [...html.matchAll(/<img\b[^>]*>/gi)].map((m) => m[0]);
   const noAlt = imgs.filter((t) => !/\balt=/.test(t)).length;
@@ -706,6 +709,7 @@ try {
   if (urlArg) await runUrl(urlArg);
   else await runDir(dirArg);
 
+  results.site.noindexPages = results.pages.filter((p) => p.noindex).map((p) => p.url);
   const payload = JSON.stringify(results, null, 2);
   await writeReport(outPath, payload);
   console.log(`Pages: ${results.pages.length} | errors: ${results.errors} | warnings: ${results.warnings}`);

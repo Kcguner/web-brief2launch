@@ -59,10 +59,14 @@ Every item there must still be resolved or accepted in writing before release.
    where `<skills-dir>` is the installed skills root (e.g. `.agents/skills`).
    Read both `docs/seo-audit.json` (stage evidence) and the fresh
    `docs/seo-audit-release.json`. The SEO row is `fail` if the stage artifact
-   `docs/seo-audit.json` is missing or unreadable, or if the fresh audit
-   reports any error-level finding on an indexable page. Attach both JSON
-   paths as evidence. Without network access, mark the row `manual-required`
-   and give the user the exact command above. Also re-check status codes on
+   `docs/seo-audit.json` is missing or unreadable; if the fresh audit reports
+   any error-level finding, including `site.errors` (robots, sitemap, orphan
+   pages, click depth); or if `site.noindexPages` lists a URL that is not
+   recorded as intentionally noindexed in `docs/seo-report.md`. Title and
+   description length warnings are reviewed and either fixed or accepted in
+   writing there, not ignored. Attach both JSON paths as evidence. Without
+   network access, mark the row `manual-required` and give the user the exact
+   command above. Also re-check status codes on
    the main routes, security headers, robots and sitemap, Core Web Vitals on
    mobile, and the primary conversion flow in a browser.
 5. Check legal status. If `docs/legal-review.md` says counsel review is pending,
@@ -92,8 +96,9 @@ High-level gate items. The full list is in `checklist.md`.
 
 - [ ] Every required stage output file exists and is non-empty.
 - [ ] Every stage gate in `docs/progress.md` is `done` or a recorded `skip`.
-- [ ] SEO: zero errors on titles, descriptions, canonicals, H1s, and social tags
-      for indexable pages.
+- [ ] SEO: zero errors on titles, descriptions, canonicals, H1s, social tags,
+      and site-level checks; every `site.noindexPages` entry is intentional
+      and recorded.
 - [ ] Performance: mobile Lighthouse Performance ≥ 90, LCP < 2.5 s,
       CLS < 0.1, INP < 200 ms.
 - [ ] Security: HTTPS and HSTS live, security headers present, no critical or
