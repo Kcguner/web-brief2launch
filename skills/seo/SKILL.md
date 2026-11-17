@@ -29,6 +29,15 @@ Supporting files: `checklist.md` (full audit list), `reference.md` (snippets),
    it against a local build directory with `--dir ./dist --out docs/seo-audit.json`.
 2. Read the JSON. Note every page with a missing or duplicated title,
    description, canonical, H1, or Open Graph tag.
+   **JavaScript-off check.** The audit reads raw HTML and never executes
+   JavaScript. For the home page and one nested page, confirm the raw HTML
+   contains the primary content, one H1, and the main navigation links. When a
+   browser is available, save a rendered-DOM snapshot as an artifact and
+   compare it with the raw HTML. If the raw HTML is a shell, record a
+   `csr-rendering` finding with both artifacts and recommend SSR, SSG, or
+   prerendering for indexable routes; do not treat a no-JS fallback as a fix.
+   Raw HTML with no `<a href>` links is a crawl finding even when the rendered
+   page shows a menu.
 3. Ground the keyword and search-gap analysis in real data. Ask the user for a
    CSV export from Google Search Console (Performance report) or Google Trends,
    or an analytics export; direct console access is not required. For every
@@ -76,6 +85,8 @@ Supporting files: `checklist.md` (full audit list), `reference.md` (snippets),
       `assumption — not verified with data` label.
 - [ ] Unique title (≤ 60 chars) and meta description (≤ 155 chars) per page.
 - [ ] Exactly one H1 per page; no skipped heading levels.
+- [ ] JavaScript-off view: raw HTML contains the primary content, one H1, and
+      the main navigation links; CSR findings carry raw and rendered evidence.
 - [ ] `robots.txt` valid, links the sitemap, does not block the site.
 - [ ] `sitemap.xml` valid, canonical URLs only, referenced in `robots.txt`.
 - [ ] Canonical tag present and self-referencing where appropriate.
@@ -119,5 +130,7 @@ Supporting files: `checklist.md` (full audit list), `reference.md` (snippets),
   check in `scripts/audit.mjs` (it runs `JSON.parse` only) and label structural
   and online validation as not performed.
 - The site is client-rendered and the audit sees an empty shell: report
-  rendering as a finding and re-run against a rendered snapshot.
+  rendering as a finding, save the raw and rendered artifacts, and re-run
+  against a rendered snapshot. Do not ship a CSR-only indexable route without
+  SSR, SSG, or prerendering.
 - Record failures and lessons in `docs/ledger.md` per `../shared/ledger-rule.md`.

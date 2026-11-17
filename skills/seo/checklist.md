@@ -27,6 +27,8 @@ review. Tick each item with the evidence path next to it.
 - [ ] One H1, matching the page intent.
 - [ ] H2/H3 form a logical outline.
 - [ ] Primary content is in the HTML source, not injected after load.
+- [ ] JavaScript-off view: raw HTML contains the primary content, one H1, and
+      the main navigation links; CSR findings carry raw and rendered evidence.
 - [ ] Images have descriptive `alt`; decorative images use empty `alt`.
 - [ ] Descriptive anchor text; no "click here".
 - [ ] No thin or duplicate pages in the index.

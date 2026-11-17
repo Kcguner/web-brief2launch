@@ -93,6 +93,8 @@ async function main() {
     "accepted-risk", "blocked-manual", "manual-required", "noindex",
     "font-display", "prefers-reduced-motion", "x-default", "hreflang",
     "noindex", "summary_large_image", "server-side", "e-commerce",
+    "csr-rendering", "no-raw-links", "redirect-multi-hop",
+    "redirect-not-permanent", "robots-blocks-googlebot",
   ]);
 
   const PRODUCT_TERMS = [
@@ -488,7 +490,8 @@ async function main() {
         && urls.some((u) => u.endsWith("/b"))
         && (crawl.json.site.robotsSkipped ?? 0) >= 1
         && !urls.some((u) => u.includes("secret"))
-        && crawl.json.pages.some((p) => p.requestedUrl);
+        && crawl.json.pages.some((p) => p.requestedUrl)
+        && crawl.json.pages.some((p) => p.url.endsWith("/b") && p.findings.some((f) => f.rule === "no-raw-links"));
       if (!crawlOk) { urlMode = "FAIL"; scriptProblems.push("audit.mjs url-mode crawl regression failed (deep/sitemap/robots/redirect checks)"); }
       // Link-graph regression: /sitemap-only is an orphan, /a has a contextual
       // inbound link, /nav-only is reached only through <nav>, max depth is 2.

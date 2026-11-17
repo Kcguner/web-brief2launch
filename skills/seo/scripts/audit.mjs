@@ -325,7 +325,11 @@ function auditHtml(html, pageUrl, status = 200) {
   if (noAlt) push("warning", "img-alt-missing", `${noAlt} of ${imgs.length} images lack alt.`);
 
   const body = stripTags(html.replace(/<head[\s\S]*?<\/head>/i, ""));
-  if (body.length < 200) push("warning", "thin-content", `Rendered text is ${body.length} chars.`);
+  if (body.length < 200) push("warning", "thin-content", `Raw HTML text is ${body.length} chars.`);
+  const rawAnchors = (html.match(/<a\b[^>]*?\bhref\s*=/gi) || []).length;
+  if (rawAnchors === 0) {
+    push("warning", "no-raw-links", "No <a href> links in the raw HTML; a JavaScript-rendered menu is invisible to crawlers.");
+  }
   return entry;
 }
 
