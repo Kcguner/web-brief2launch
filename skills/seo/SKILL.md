@@ -29,22 +29,30 @@ Supporting files: `checklist.md` (full audit list), `reference.md` (snippets),
    it against a local build directory with `--dir ./dist --out docs/seo-audit.json`.
 2. Read the JSON. Note every page with a missing or duplicated title,
    description, canonical, H1, or Open Graph tag.
-3. Check heading hierarchy: exactly one H1 per page, no skipped levels, headings
+3. Ground the keyword and search-gap analysis in real data. Ask the user for a
+   CSV export from Google Search Console (Performance report) or Google Trends,
+   or an analytics export; direct console access is not required. For every
+   keyword, search-volume, or competition claim without a data source, write
+   the label `assumption — not verified with data` next to it in
+   `docs/seo-report.md`. Never invent search volumes. With no data at all,
+   label the whole analysis as assumption and list obtaining the export as a
+   manual step.
+4. Check heading hierarchy: exactly one H1 per page, no skipped levels, headings
    used for structure not styling.
-4. Check `robots.txt`: allows intended crawling, blocks admin and search-result
+5. Check `robots.txt`: allows intended crawling, blocks admin and search-result
    pages, links the sitemap.
-5. Check `sitemap.xml`: valid XML, only canonical 200-status URLs, no redirects
+6. Check `sitemap.xml`: valid XML, only canonical 200-status URLs, no redirects
    or 404s, listed in `robots.txt`.
-6. Check canonical tags: one per page, absolute, self-referencing unless a real
+7. Check canonical tags: one per page, absolute, self-referencing unless a real
    duplicate exists.
-7. Check Schema.org JSON-LD: `Organization` or `LocalBusiness` on the home page,
+8. Check Schema.org JSON-LD: `Organization` or `LocalBusiness` on the home page,
    `WebSite` with `SearchAction` if search exists, `Article` on posts,
    `Product` + `Offer` on product pages, `BreadcrumbList` on nested pages.
    Validate with a rich-results testing tool and record the result.
-8. Check Open Graph and Twitter Card tags on every shareable page, with an image
+9. Check Open Graph and Twitter Card tags on every shareable page, with an image
    of at least 1200×630.
-9. Check indexability: no accidental `noindex`, no `Disallow: /`, no soft 404s.
-10. Check internal linking: no orphan pages, descriptive anchor text, no
+10. Check indexability: no accidental `noindex`, no `Disallow: /`, no soft 404s.
+11. Check internal linking: no orphan pages, descriptive anchor text, no
     click-depth above three. In `--url` mode read `site.linkGraph` from the
     JSON: `orphans`, `inbound` counts, measured `depth`, and `navOnlyPages`.
     When `complete` is false, re-run with a higher `--max` or mark the check
@@ -52,15 +60,17 @@ Supporting files: `checklist.md` (full audit list), `reference.md` (snippets),
     in-content links (`contextualInbound`): a page linked only from the footer
     still needs a contextual link where the content supports it. In `--dir`
     mode the graph is unavailable; check links manually.
-11. Check language and region: `lang` attribute present; `hreflang` pairs are
+12. Check language and region: `lang` attribute present; `hreflang` pairs are
     reciprocal and include `x-default` when multi-language.
-12. Check redirects: one hop, 301 to the final canonical URL, HTTPS and
+13. Check redirects: one hop, 301 to the final canonical URL, HTTPS and
     host-normalized.
-13. Write `docs/seo-report.md` in the user's language: findings by severity,
+14. Write `docs/seo-report.md` in the user's language: findings by severity,
     the fix for each, and the evidence path.
 
 ## Checklist
 
+- [ ] Keyword and volume claims cite a data source or carry the
+      `assumption — not verified with data` label.
 - [ ] Unique title (≤ 60 chars) and meta description (≤ 155 chars) per page.
 - [ ] Exactly one H1 per page; no skipped heading levels.
 - [ ] `robots.txt` valid, links the sitemap, does not block the site.

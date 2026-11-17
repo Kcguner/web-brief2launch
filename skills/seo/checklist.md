@@ -58,6 +58,9 @@ review. Tick each item with the evidence path next to it.
 ## Content and keywords
 
 - [ ] One primary intent per page; no keyword cannibalization.
+- [ ] Every keyword or search-volume claim cites a data source (user-provided
+      Search Console or Trends CSV, or an analytics export) or carries the
+      `assumption — not verified with data` label.
 - [ ] Programmatic/template-generated pages: every URL adds unique value
       (distinct data, copy, or media); no scaled doorway-style pages. Sample at
       least three generated pages and compare body content, not just titles.

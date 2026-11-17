@@ -84,8 +84,11 @@ brainstorming for open-ended exploration of goals and trade-offs.
     reason: reduces revision cycles)
 
 **Group E — SEO and discoverability**
-16. Which search terms or topics matter? (default: derive from the primary
-    service; reason: drives structure and content)
+16. Which search terms or topics matter, and can you provide a CSV export from
+    Google Search Console or Google Trends (or an analytics query export) to
+    back them? Terms without data are recorded as assumptions in the brief.
+    (default: derive from the primary service, no export assumed; reason:
+    drives structure and content, and unverified terms must not read as facts)
 17. Is the site new, or does it replace an existing indexed site? (default: new;
     reason: redirects and preserved rankings differ)
 18. Any multi-language or regional targeting? (default: no; reason: URL and
