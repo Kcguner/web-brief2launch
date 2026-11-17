@@ -45,7 +45,13 @@ Supporting files: `checklist.md` (full audit list), `reference.md` (snippets),
    of at least 1200×630.
 9. Check indexability: no accidental `noindex`, no `Disallow: /`, no soft 404s.
 10. Check internal linking: no orphan pages, descriptive anchor text, no
-    click-depth above three.
+    click-depth above three. In `--url` mode read `site.linkGraph` from the
+    JSON: `orphans`, `inbound` counts, measured `depth`, and `navOnlyPages`.
+    When `complete` is false, re-run with a higher `--max` or mark the check
+    partial. Navigation/footer links are counted separately from contextual
+    in-content links (`contextualInbound`): a page linked only from the footer
+    still needs a contextual link where the content supports it. In `--dir`
+    mode the graph is unavailable; check links manually.
 11. Check language and region: `lang` attribute present; `hreflang` pairs are
     reciprocal and include `x-default` when multi-language.
 12. Check redirects: one hop, 301 to the final canonical URL, HTTPS and

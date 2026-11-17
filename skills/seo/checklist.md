@@ -58,6 +58,9 @@ review. Tick each item with the evidence path next to it.
 ## Content and keywords
 
 - [ ] One primary intent per page; no keyword cannibalization.
+- [ ] Programmatic/template-generated pages: every URL adds unique value
+      (distinct data, copy, or media); no scaled doorway-style pages. Sample at
+      least three generated pages and compare body content, not just titles.
 - [ ] Internal links use relevant anchor text.
 - [ ] Titles and descriptions match search intent.
 - [ ] Redirect map from any old site covers every old URL.

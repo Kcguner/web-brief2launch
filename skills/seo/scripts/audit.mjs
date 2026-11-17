@@ -13,6 +13,10 @@
 // Discovery: home page links plus sitemap.xml URLs, then breadth-first through
 // discovered same-origin links up to --max pages. Redirects are followed
 // manually and every hop is re-checked against the private-host blocklist.
+// In --url mode the crawl also builds an internal-link graph (site.linkGraph):
+// inbound counts, contextual vs navigation/footer links, click depth from the
+// home page, orphan pages, and navigation-only pages. Orphan and depth errors
+// are raised only when the crawl completed within --max.
 // Writes JSON and prints a summary. Exit 1 if errors exist.
 
 import { readFile, writeFile, readdir, mkdir, rename, unlink } from "node:fs/promises";
@@ -39,7 +43,10 @@ Options:
 
 Checks title, meta description, canonical, H1, heading order, lang, Open Graph,
 Twitter Card, and JSON-LD per page. Checks robots.txt and sitemap.xml when
---url is used. Writes a JSON report. Exit 1 if errors exist, 2 on bad usage.
+--url is used, and computes an internal-link graph (site.linkGraph): inbound
+and contextual inbound counts, click depth, orphan pages, deep pages, and
+pages linked only from navigation/footer. --dir mode has no link graph.
+Writes a JSON report. Exit 1 if errors exist, 2 on bad usage.
 Requires Node.js >= 18. Runnable from any directory.`);
   process.exit(0);
 }
@@ -186,10 +193,16 @@ if (urlArg) {
 const results = { generatedAt: new Date().toISOString(), mode: null, pages: [], site: {}, errors: 0, warnings: 0 };
 const titleIndex = new Map();
 results.site.errors = [];
+results.site.warnings = [];
 
 function addSiteError(rule, detail) {
   results.errors++;
   results.site.errors.push({ rule, detail });
+}
+
+function addSiteWarning(rule, detail) {
+  results.warnings++;
+  results.site.warnings.push({ rule, detail });
 }
 
 function stripTags(html) {
@@ -517,22 +530,35 @@ async function runUrl(base) {
 
   const seen = new Set([pageKey(new URL(startUrl))]);
   const queue = [];
+  const edges = [];
+  const isAssetPath = (pathname) => /\.(css|js|png|jpe?g|svg|webp|avif|ico|pdf|zip|xml|txt)$/i.test(pathname);
   const enqueue = (abs) => {
     if (abs.origin !== origin) return;
-    if (abs.pathname.match(/\.(css|js|png|jpe?g|svg|webp|avif|ico|pdf|zip|xml|txt)$/i)) return;
+    if (isAssetPath(abs.pathname)) return;
     const key = pageKey(abs);
     if (seen.has(key)) return;
     seen.add(key);
     queue.push({ key, url: origin + key });
   };
+  // Navigation chrome ranges: <nav>, <footer>, <header> blocks. Best-effort
+  // heuristic — nested or unclosed tags may misclassify a link, which is
+  // acceptable for an audit. A link outside every range is contextual.
+  const chromeRanges = (html) =>
+    [...html.matchAll(/<(nav|footer|header)\b[\s\S]*?<\/\1>/gi)].map((m) => [m.index, m.index + m[0].length]);
   // href values may be double-quoted, single-quoted, or unquoted (HTML5).
   const extractLinks = (html, fromUrl) => {
+    const ranges = chromeRanges(html);
+    const fromKey = pageKey(new URL(fromUrl));
     for (const m of html.matchAll(/<a\b[^>]*?\bhref\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+))/gi)) {
       const href = (m[1] ?? m[2] ?? m[3] ?? "").trim();
       if (!href || href.startsWith("#")) continue;
       let abs;
       try { abs = new URL(href, fromUrl); }
       catch { continue; }
+      if (abs.origin === origin && !isAssetPath(abs.pathname)) {
+        const contextual = !ranges.some(([s, e]) => m.index >= s && m.index < e);
+        edges.push({ from: fromKey, to: pageKey(abs), contextual });
+      }
       enqueue(abs);
     }
   };
@@ -600,6 +626,41 @@ async function runUrl(base) {
   if (robotsSkipped > 0) results.site.robotsSkipped = robotsSkipped;
   results.site.linksDiscovered = seen.size;
   results.site.truncated = queue.length > 0;
+
+  // Internal-link graph from the crawled edges. Self-loops do not count as
+  // inbound. Orphan and depth errors are raised only on a complete crawl; a
+  // truncated crawl would report false positives for pages not yet visited.
+  const homeKey = pageKey(new URL(startUrl));
+  const inbound = {};
+  const contextualInbound = {};
+  const adjacency = new Map();
+  for (const e of edges) {
+    if (!adjacency.has(e.from)) adjacency.set(e.from, []);
+    adjacency.get(e.from).push(e.to);
+    if (e.from === e.to) continue;
+    inbound[e.to] = (inbound[e.to] || 0) + 1;
+    if (e.contextual) contextualInbound[e.to] = (contextualInbound[e.to] || 0) + 1;
+  }
+  const depth = { [homeKey]: 0 };
+  const bfs = [homeKey];
+  for (let i = 0; i < bfs.length; i += 1) {
+    for (const to of adjacency.get(bfs[i]) || []) {
+      if (depth[to] === undefined) { depth[to] = depth[bfs[i]] + 1; bfs.push(to); }
+    }
+  }
+  const auditedKeys = [...new Set(results.pages.map((p) => {
+    try { return pageKey(new URL(p.url, startUrl)); } catch { return null; }
+  }).filter((k) => k !== null))];
+  const orphans = auditedKeys.filter((k) => k !== homeKey && !inbound[k]);
+  const deepPages = auditedKeys.filter((k) => depth[k] > 3).map((k) => ({ page: k, depth: depth[k] }));
+  const navOnlyPages = auditedKeys.filter((k) => inbound[k] > 0 && !contextualInbound[k]);
+  const complete = !results.site.truncated;
+  results.site.linkGraph = { inbound, contextualInbound, depth, orphans, deepPages, navOnlyPages, complete };
+  if (complete) {
+    for (const k of orphans) addSiteError("orphan-page", `${k} has no inbound internal links.`);
+    for (const d of deepPages) addSiteError("click-depth", `${d.page} is ${d.depth} clicks from the home page (aim <= 3).`);
+    for (const k of navOnlyPages) addSiteWarning("nav-only-links", `${k} is linked only from navigation/footer; add a contextual link where content supports it.`);
+  }
 }
 
 async function runDir(dir) {
