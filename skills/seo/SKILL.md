@@ -52,7 +52,10 @@ Supporting files: `checklist.md` (full audit list), `reference.md` (snippets),
    pages, links the sitemap. The robots.txt policy for AI crawlers (GPTBot,
    ClaudeBot, PerplexityBot, Google-Extended) must be a recorded, deliberate
    user decision (allow or block, with a reason in `docs/seo-report.md`), never
-   a silent default; see reference.md.
+   a silent default; see reference.md. Check Googlebot's own group, not only
+   `User-agent: *`: the audit reports `site.robots.googlebotAllowed` and
+   `site.robots.aiAccess`. A Googlebot-only `Disallow: /` is an error even when
+   the wildcard group allows the site.
 6. Check `sitemap.xml`: valid XML, only canonical 200-status URLs, no redirects
    or 404s, listed in `robots.txt`.
 7. Check canonical tags: one per page, absolute, self-referencing unless a real

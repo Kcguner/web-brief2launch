@@ -239,7 +239,7 @@ function links(html, rel) {
     .map((m) => attrValue(m[0], "href") ?? "");
 }
 
-function auditHtml(html, pageUrl, status = 200) {
+function auditHtml(html, pageUrl, status = 200, xRobots = "") {
   const entry = { url: pageUrl, findings: [], status };
   results.pages.push(entry);
   const push = (level, rule, detail) => {
@@ -313,7 +313,7 @@ function auditHtml(html, pageUrl, status = 200) {
   }
 
   // Read name/content regardless of attribute order and accept "none".
-  const robotDirectives = [...metas(html, "robots"), ...metas(html, "googlebot")];
+  const robotDirectives = [...metas(html, "robots"), ...metas(html, "googlebot"), xRobots];
   const noindex = robotDirectives.some((content) => {
     const value = content.toLowerCase();
     return /\bnoindex\b/.test(value) || /\bnone\b/.test(value);
@@ -384,7 +384,7 @@ async function fetchText(url, { timeoutMs = 20000, htmlOnly = false, maxBytes = 
         const location = res.headers.get("location");
         try { await res.body?.cancel(); } catch { /* ignore */ }
         if (!location) {
-          return { status: res.status, url: current, contentType: "", text: "", truncated: false, skipped: false };
+          return { status: res.status, url: current, contentType: "", xRobots: res.headers.get("x-robots-tag") || "", text: "", truncated: false, skipped: false };
         }
         if (hop >= MAX_REDIRECTS) throw new Error(`Too many redirects (>${MAX_REDIRECTS}) starting at ${url}`);
         let next;
@@ -401,12 +401,13 @@ async function fetchText(url, { timeoutMs = 20000, htmlOnly = false, maxBytes = 
         continue;
       }
       const contentType = (res.headers.get("content-type") || "").toLowerCase();
+      const xRobots = res.headers.get("x-robots-tag") || "";
       if (htmlOnly && contentType && !/text\/html|application\/xhtml\+xml/.test(contentType)) {
         try { await res.body?.cancel(); } catch { /* ignore */ }
-        return { status: res.status, url: current, contentType, skipped: true, text: "", truncated: false };
+        return { status: res.status, url: current, contentType, xRobots, skipped: true, text: "", truncated: false };
       }
       const { text, truncated } = await readLimited(res, maxBytes);
-      return { status: res.status, url: current, contentType, text, truncated, skipped: false };
+      return { status: res.status, url: current, contentType, xRobots, text, truncated, skipped: false };
     }
   } finally {
     clearTimeout(timer);
@@ -487,8 +488,16 @@ function parseRobots(text) {
   return { groups, sitemaps };
 }
 
-function robotsAllows(key, groups) {
-  const applicable = groups.filter((g) => g.agents.some((a) => a === "*" || a.includes("webmaster-skill")));
+// RFC 9309: a matching specific group replaces the wildcard group. The custom
+// webmaster-skill group must still match the audit's own user agent.
+function robotsGroupsFor(groups, agent) {
+  const name = agent.toLowerCase();
+  const specific = groups.filter((g) => g.agents.some((a) => a !== "*" && (a === name || name.startsWith(a))));
+  return specific.length ? specific : groups.filter((g) => g.agents.some((a) => a === "*"));
+}
+
+function robotsAllows(key, groups, agent = "webmaster-skill") {
+  const applicable = robotsGroupsFor(groups, agent);
   let best = null;
   for (const group of applicable) {
     for (const rule of group.rules) {
@@ -524,15 +533,19 @@ async function runUrl(base) {
     const r = await fetchText(origin + "/robots.txt", { maxBytes: 512 * 1024 });
     robots = parseRobots(r.text);
     const blocksAll = !robotsAllows("/", robots.groups);
-    results.site.robots = { status: r.status, hasSitemap: robots.sitemaps.length > 0, blocksAll };
+    const googlebotAllowed = robotsAllows("/", robots.groups, "googlebot");
+    const aiBots = ["gptbot", "claudebot", "perplexitybot", "google-extended"];
+    const aiAccess = Object.fromEntries(aiBots.map((b) => [b, robotsAllows("/", robots.groups, b)]));
+    results.site.robots = { status: r.status, hasSitemap: robots.sitemaps.length > 0, blocksAll, googlebotAllowed, aiAccess };
     if (r.status !== 200) addSiteError("robots-not-200", "robots.txt is not 200.");
     if (blocksAll) addSiteError("robots-blocks-all", "robots.txt disallows the whole site.");
+    if (!googlebotAllowed) addSiteError("robots-blocks-googlebot", "robots.txt disallows Googlebot.");
   } catch (e) {
     results.site.robots = { error: e.message };
     addSiteError("robots-fetch-failed", e.message);
   }
 
-  const homeEntry = auditHtml(home.text, startUrl, home.status);
+  const homeEntry = auditHtml(home.text, startUrl, home.status, home.xRobots);
   if (home.truncated) homeEntry.truncated = true;
 
   const seen = new Set([pageKey(new URL(startUrl))]);
@@ -624,7 +637,7 @@ async function runUrl(base) {
         results.site.skipped = (results.site.skipped || 0) + 1;
         continue;
       }
-      const entry = auditHtml(res.text, res.url || item.url, res.status);
+      const entry = auditHtml(res.text, res.url || item.url, res.status, res.xRobots);
       if (res.url && res.url !== item.url) entry.requestedUrl = item.url;
       if (res.truncated) entry.truncated = true;
       extractLinks(res.text, res.url || item.url);

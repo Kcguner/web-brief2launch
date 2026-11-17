@@ -7,6 +7,7 @@ review. Tick each item with the evidence path next to it.
 
 - [ ] `robots.txt` returns 200 and is not an HTML error page.
 - [ ] `User-agent: *` block allows the public site.
+- [ ] Googlebot's own group does not disallow the public site (not just `*`).
 - [ ] `Sitemap:` line points to the absolute sitemap URL.
 - [ ] No `Disallow: /` left from staging.
 - [ ] AI-crawler policy (GPTBot, ClaudeBot, PerplexityBot, Google-Extended)
@@ -14,7 +15,8 @@ review. Tick each item with the evidence path next to it.
 - [ ] XML sitemap returns 200 with `Content-Type` containing `xml`.
 - [ ] Sitemap contains only canonical, indexable, 200-status URLs.
 - [ ] No `noindex` meta tag on pages that must rank.
-- [ ] `X-Robots-Tag` headers do not block public assets accidentally.
+- [ ] `X-Robots-Tag` headers do not block public assets accidentally (the audit
+      folds the header into the same noindex finding as the meta tag).
 - [ ] Pagination uses real links, not infinite scroll only.
 - [ ] Faceted or filtered URLs are canonicalized or blocked deliberately.
 - [ ] Staging is protected and not indexed.
