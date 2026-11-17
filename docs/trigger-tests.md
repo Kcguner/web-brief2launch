@@ -45,6 +45,17 @@ agent loads first.
 15. "Henüz brief yok, proje için intake sorularını sor."
     - Expected first skill: `website-intake`
 
+## Should trigger `site-audit` (4)
+
+16. "Mevcut sitemin reposunu vereyim, eksik ve hataları bul."
+    - Expected first skill: `site-audit`
+17. "Sitem yayında, bir denetle neler eksik ve hatalı."
+    - Expected first skill: `site-audit`
+18. "Audit this existing site and list what's missing or broken."
+    - Expected first skill: `site-audit`
+19. "Check my website repo for problems, don't change anything yet."
+    - Expected first skill: `site-audit`
+
 ## How to test
 
 - Use a clean session with no prior context.

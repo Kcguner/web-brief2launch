@@ -11,6 +11,8 @@ specific agent product, command syntax, or integration protocol.
   tracking, stage gates, and user approvals.
 - `skills/website-intake/` — question bank that turns a request into
   `docs/brief.md`.
+- `skills/site-audit/` — read-only audit of an existing site or repository;
+  one severity-ranked report, fixes only after approval.
 - `skills/seo/`, `skills/legal-compliance/`, `skills/monitoring-maintenance/` —
   web-specific stages that the dependency skill packs do not cover.
 - `skills/final-quality-gate/` — the release gate. It reads every other output
@@ -18,6 +20,10 @@ specific agent product, command syntax, or integration protocol.
 - `README.md` — installation, dependency list, compatibility notes.
 
 ## How an agent should use this set
+
+For a read-only audit of an existing site or repository (find gaps and
+errors, no build or redesign), start with `skills/site-audit/SKILL.md`
+instead of the orchestrator.
 
 1. Read `skills/website-master/SKILL.md` first. It decides the current stage and
    names the skill file for that stage.

@@ -60,7 +60,7 @@ async function main() {
     return 2;
   }
 
-  const LOCAL_SKILLS = ["website-master", "website-intake", "seo", "legal-compliance", "monitoring-maintenance", "final-quality-gate"];
+  const LOCAL_SKILLS = ["website-master", "website-intake", "site-audit", "seo", "legal-compliance", "monitoring-maintenance", "final-quality-gate"];
   // Directories under skills/ that hold shared support files, not skills.
   const SUPPORT_DIRS = new Set(["shared"]);
 
@@ -94,7 +94,7 @@ async function main() {
     "font-display", "prefers-reduced-motion", "x-default", "hreflang",
     "noindex", "summary_large_image", "server-side", "e-commerce",
     "csr-rendering", "no-raw-links", "redirect-multi-hop",
-    "redirect-not-permanent", "robots-blocks-googlebot",
+    "redirect-not-permanent", "robots-blocks-googlebot", "sitemap-url-not-found",
   ]);
 
   const PRODUCT_TERMS = [
@@ -201,7 +201,7 @@ async function main() {
     "frontend-report.md", "seo-report.md", "performance-report.md",
     "security-report.md", "legal-review.md", "test-report.md", "deployment.md",
     "monitoring.md", "quality-gate.md", "quality-gate.json", "seo-audit.json",
-    "seo-audit-release.json", "ledger.md",
+    "seo-audit-release.json", "ledger.md", "site-audit.md",
   ]);
   function isGeneratedDoc(target) {
     if (!/(^|\/)docs\//.test(target)) return false;
