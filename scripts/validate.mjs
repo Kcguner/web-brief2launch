@@ -400,6 +400,7 @@ async function main() {
     for (const d of docs) {
       await writeFile(join(sandbox, "docs", `${d}.md`), `# ${d}\n\nMeasured result for this stage, recorded with the command output that produced it.\nThe evidence below was captured on this run and is reproducible from a clean checkout.\n\n- Command: (recorded)\n- Result: pass\n- Evidence: command output stored with the stage\n`, "utf8");
     }
+    await writeFile(join(sandbox, "docs", "seo-audit.json"), JSON.stringify({ pages: [], errors: 0, warnings: 0 }), "utf8");
     await writeFile(join(sandbox, "docs", "progress.md"), "# Progress\n\nAll stages complete for the validation fixture.\n\n- [x] Stage 0 intake\n- [x] Stage 1 planning\n\nProject type: corporate\n\nEvidence notes for this fixture progress file, long enough to clear the stub check.\n", "utf8");
 
     const audit = join(root, "skills", "seo", "scripts", "audit.mjs");
@@ -416,6 +417,14 @@ async function main() {
     // The gate exits 3 for a structural pass: structure alone is not a release
     // PASS. Treat 3 as success here and keep the summary in the detail line.
     if (gateCode !== 0 && gateCode !== 3) scriptProblems.push(`gate.mjs on fixture exited ${gateCode}: ${gateSummary}`);
+
+    // Regression: the Stage 6 machine output is structural, so removing it fails.
+    await rm(join(sandbox, "docs", "seo-audit.json"));
+    let missingAuditCode = 0;
+    try { await run(process.execPath, [gate, "--docs", join(sandbox, "docs"), "--out", gateOut], { timeout: 30000 }); }
+    catch (e) { missingAuditCode = e.code ?? 0; }
+    if (missingAuditCode !== 1) scriptProblems.push(`gate.mjs missed a missing seo-audit.json (exit ${missingAuditCode}, want 1)`);
+    await writeFile(join(sandbox, "docs", "seo-audit.json"), JSON.stringify({ pages: [], errors: 0, warnings: 0 }), "utf8");
 
     // Regression: a blocked status inside a list item (the stages.md example
     // format) must fail the structure, not slip through the parser.

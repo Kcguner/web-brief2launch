@@ -215,6 +215,22 @@ try {
   if (notDone.length) report.unresolved.push({ file: "progress.md", detail: `${notDone.length} unchecked items` });
 } catch { /* already reported as missing */ }
 
+// The Stage 6 machine output is a declared gate input, so a missing or
+// unparseable report is a structural failure even though it is not markdown.
+try {
+  const auditText = await readFile(join(docsDir, "seo-audit.json"), "utf8");
+  const audit = JSON.parse(auditText);
+  report.seoAudit = {
+    present: true,
+    pages: Array.isArray(audit.pages) ? audit.pages.length : null,
+    errors: typeof audit.errors === "number" ? audit.errors : null,
+  };
+  if (!Array.isArray(audit.pages)) report.unresolved.push({ file: "seo-audit.json", detail: "no pages array" });
+} catch (e) {
+  report.seoAudit = { present: false, error: e.code || e.message };
+  report.missing.push("seo-audit.json");
+}
+
 if (report.missing.length || report.unresolved.length) report.structuralVerdict = "FAIL";
 
 // The release verdict is written by the manual checklist walk into
