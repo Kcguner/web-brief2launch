@@ -1,6 +1,6 @@
 ---
 name: site-audit
-description: Use when the user asks to audit an existing website or repository for missing pieces and errors without building or redesigning it (e.g. "site audit", "audit this site", "check my site for problems", "site denetimi", "eksik ve hataları bul", "sitemde neler eksik"). Read-only: runs the SEO audit script plus a quick technical sweep and writes one severity-ranked report; fixes start only after explicit approval. For a full build, redesign, or relaunch, use website-master first.
+description: Use when the user asks to audit an existing website or repository for missing pieces and errors without building or redesigning it (e.g. "site audit", "audit this site", "check my site for problems", "site denetimi", "eksik ve hataları bul", "sitemde neler eksik"). Read-only; runs the SEO audit script plus a quick technical sweep and writes one severity-ranked report; fixes start only after explicit approval. For a full build, redesign, or relaunch, use website-master first.
 ---
 
 # Site Audit

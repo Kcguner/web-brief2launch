@@ -36,6 +36,24 @@ Then open `AGENTS.md` (or your agent's instruction file) and follow the reading
 order there. For agents that do not auto-load skills, point the agent at this
 folder and start with `skills/website-master/SKILL.md`.
 
+### One-command setup in OpenCode
+
+This repository ships `/webmaster`, a command that installs all seven skills and
+the pinned dependency packs into the project you are working in. Copy it once
+into your global OpenCode commands folder:
+
+```bash
+mkdir -p ~/.config/opencode/commands
+cp .opencode/commands/webmaster.md ~/.config/opencode/commands/webmaster.md
+```
+
+OpenCode reloads command files automatically. In the target project, run
+`/webmaster`. It detects the target agent, installs this skill set, runs the
+pinned bootstrap with approval for this one-shot setup, adds the project entry
+pointer, and reports the verification output. Pass an explicit agent id as an
+argument if detection is ambiguous, for example `/webmaster opencode`. The
+optional `impeccable` pack is never installed by this command.
+
 ### What the bootstrap does
 
 The script ships inside the `website-master` skill folder. On the first website
@@ -128,6 +146,7 @@ superpowers version this set references.
 
 | Path | Role |
 |------|------|
+| `.opencode/commands/webmaster.md` | OpenCode `/webmaster`: installs the whole set and pinned dependencies into the current project |
 | `skills/website-master/` | Orchestrator: 13-stage flow, gates, approvals, progress file |
 | `skills/website-master/stages.md` | Stage map, phase map, `docs/progress.md` format |
 | `skills/website-master/reference.md` | Stage checklists for IA and backend/data |
