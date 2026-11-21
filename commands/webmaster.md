@@ -11,8 +11,20 @@ Running harness: {{HARNESS}}. Use the agent id and skills directory for that har
 | github-copilot | `github-copilot` | `.agents/skills/` |
 | windsurf | `windsurf` | `.windsurf/skills/` |
 | gemini-cli | `gemini-cli` | `.agents/skills/` |
+| deepseek-harness | `universal` | `.agents/skills/` |
+| qwen-code | `qwen-code` | `.qwen/skills/` |
+| kimi-code-cli | `kimi-code-cli` | `.agents/skills/` |
+| minimax-code | `minimax-code` | `.minimax/skills/` |
+| grok-build | `grok` | `.grok/skills/` |
+| kiro-cli | `kiro-cli` | `.kiro/skills/` |
+| cline | `cline` | `.agents/skills/` |
+| roo-code | `roo` | `.roo/skills/` |
+| continue | `continue` | `.continue/skills/` |
+| openhands | `openhands` | `.openhands/skills/` |
 
-If this file is used as a plain prompt without a harness name (for example pasted into a chat), detect the harness from project markers in this order: `.claude/` → claude-code, `.opencode/` → opencode, `.codex/` → codex, `.cursor/` → cursor, `.github/` → github-copilot, `.windsurf/` or `.devin/` → windsurf, `.gemini/` → gemini-cli. Check the home-directory counterparts only when no project marker matches. If several still match, ask the user in plain text or with the question tool. Never hand-write raw UI blocks to ask a question; use the question tool or plain text.
+DeepSeek Harness has no dedicated skills CLI id: use `universal`, which writes to `.agents/skills/`, a directory DSH reads natively. Its setup skill may live in `.dsh/skills/` or `.agents/skills/`.
+
+If this file is used as a plain prompt without a harness name (for example pasted into a chat), detect the harness from project markers in this order: `.dsh/` → deepseek-harness, `.qwen/` → qwen-code, `.kimi-code/` → kimi-code-cli, `.minimax/` → minimax-code, `.grok/` → grok-build, `.kiro/` → kiro-cli, `.claude/` → claude-code, `.opencode/` → opencode, `.codex/` → codex, `.cursor/` → cursor, `.github/` → github-copilot, `.windsurf/` or `.devin/` → windsurf, `.gemini/` → gemini-cli, `.cline/` → cline, `.roo/` → roo-code, `.continue/` → continue, `.openhands/` → openhands. Check the home-directory counterparts only when no project marker matches. If several still match, ask the user in plain text or with the question tool. Never hand-write raw UI blocks to ask a question; use the question tool or plain text.
 
 1. Check `node --version`. Node.js >= 18 is required. If it is missing or older, stop and tell the user to install Node.js >= 18 first.
 

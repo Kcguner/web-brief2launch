@@ -78,7 +78,7 @@ function packageSource(pkg) {
 }
 
 // Agent skill directories and detection markers come from the skills CLI
-// supported-agents table (checked 2026-11-10). Several agents share the
+// supported-agents table (checked 2026-11-21). Several agents share the
 // project directory `.agents/skills`, so detection uses agent config markers
 // instead of skill directories; otherwise one shared directory would look
 // like several installed agents.
@@ -90,6 +90,16 @@ const AGENTS = [
   { id: "github-copilot", project: ".agents/skills", global: ".copilot/skills", markers: [".github/copilot-instructions.md", "~/.copilot"] },
   { id: "windsurf", project: ".windsurf/skills", global: ".codeium/windsurf/skills", markers: [".windsurf", "~/.codeium/windsurf"] },
   { id: "gemini-cli", project: ".agents/skills", global: ".gemini/skills", markers: [".gemini", "~/.gemini"] },
+  { id: "universal", project: ".agents/skills", global: ".agents/skills", markers: [".dsh", "~/.dsh"] },
+  { id: "qwen-code", project: ".qwen/skills", global: ".qwen/skills", markers: [".qwen", "~/.qwen"] },
+  { id: "kimi-code-cli", project: ".agents/skills", global: ".agents/skills", markers: [".kimi-code", "~/.kimi-code"] },
+  { id: "minimax-code", project: ".minimax/skills", global: ".minimax/skills", markers: [".minimax", "~/.minimax"] },
+  { id: "grok", project: ".grok/skills", global: ".grok/skills", markers: [".grok", "~/.grok"] },
+  { id: "kiro-cli", project: ".kiro/skills", global: ".kiro/skills", markers: [".kiro", "~/.kiro"] },
+  { id: "cline", project: ".agents/skills", global: ".agents/skills", markers: [".cline", "~/.cline"] },
+  { id: "roo", project: ".roo/skills", global: ".roo/skills", markers: [".roo", "~/.roo"] },
+  { id: "continue", project: ".continue/skills", global: ".continue/skills", markers: [".continue", "~/.continue"] },
+  { id: "openhands", project: ".openhands/skills", global: ".openhands/skills", markers: [".openhands", "~/.openhands"] },
 ];
 const AGENT_IDS = AGENTS.map((a) => a.id);
 

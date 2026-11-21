@@ -72,6 +72,28 @@ const files = new Map([
   ],
 ]);
 
+// Harnesses that discover Agent Skills instead of separate command files.
+// Copy each generated SKILL.md into that harness's project skills directory.
+const skillHarnesses = [
+  ["deepseek-harness", ".dsh/skills"],
+  ["qwen-code", ".qwen/skills"],
+  ["kimi-code-cli", ".kimi-code/skills"],
+  ["minimax-code", ".minimax/skills"],
+  ["grok-build", ".grok/skills"],
+  ["kiro-cli", ".kiro/skills"],
+  ["cline", ".agents/skills"],
+  ["roo-code", ".roo/skills"],
+  ["continue", ".continue/skills"],
+  ["openhands", ".openhands/skills"],
+];
+
+for (const [harness] of skillHarnesses) {
+  files.set(
+    `commands/harness-skills/${harness}/webmaster/SKILL.md`,
+    `---\nname: webmaster\ndescription: ${description}\n---\n\n${body(harness, "If the user supplied extra instructions with this command, follow them.")}`
+  );
+}
+
 const check = process.argv.includes("--check");
 let drift = 0;
 

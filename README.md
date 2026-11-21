@@ -47,6 +47,8 @@ harness name, it falls back to detecting the harness from project markers.
 
 Copy the file for your harness once:
 
+Command or prompt file:
+
 | Harness | Copy from this repo | Copy to |
 |---------|---------------------|---------|
 | OpenCode | `.opencode/commands/webmaster.md` | `~/.config/opencode/commands/` |
@@ -57,7 +59,27 @@ Copy the file for your harness once:
 | Windsurf / Cascade | `.windsurf/workflows/webmaster.md` | `~/.codeium/windsurf/global_workflows/` or project `.windsurf/workflows/` |
 | Codex | `commands/webmaster.codex.toml` | paste the block into `~/.codex/config.toml` |
 
-OpenCode, Claude Code, Cursor and Gemini CLI reload command files automatically.
+Agent Skills harnesses — copy the generated `webmaster/` folder into the
+project skills directory, then invoke `/webmaster` (Kimi Code CLI:
+`/skill:webmaster`):
+
+| Harness | Copy from this repo | Project skills directory |
+|---------|---------------------|--------------------------|
+| DeepSeek Harness | `commands/harness-skills/deepseek-harness/webmaster/` | `.dsh/skills/` or `.agents/skills/` |
+| Qwen Code | `commands/harness-skills/qwen-code/webmaster/` | `.qwen/skills/` |
+| Kimi Code CLI | `commands/harness-skills/kimi-code-cli/webmaster/` | `.kimi-code/skills/` |
+| MiniMax Code | `commands/harness-skills/minimax-code/webmaster/` | `.minimax/skills/` |
+| Grok Build | `commands/harness-skills/grok-build/webmaster/` | `.grok/skills/` |
+| Kiro CLI | `commands/harness-skills/kiro-cli/webmaster/` | `.kiro/skills/` |
+| Cline | `commands/harness-skills/cline/webmaster/` | `.agents/skills/` |
+| Roo Code | `commands/harness-skills/roo-code/webmaster/` | `.roo/skills/` |
+| Continue | `commands/harness-skills/continue/webmaster/` | `.continue/skills/` |
+| OpenHands | `commands/harness-skills/openhands/webmaster/` | `.openhands/skills/` |
+
+DeepSeek Harness has no dedicated skills CLI id. The command passes
+`-a universal`, which installs into `.agents/skills/`; DSH reads that directory
+natively.
+
 In the target project, run `/webmaster` (Codex: `/presets`, slot `1`). It
 installs this skill set, runs the pinned bootstrap with approval for this
 one-shot setup, adds the project entry pointer, and reports the verification
@@ -162,6 +184,7 @@ superpowers version this set references.
 | `commands/webmaster.md` | Canonical `/webmaster` prompt body for every harness |
 | `scripts/generate-commands.mjs` | Generates and checks the harness-specific command files |
 | `commands/webmaster.codex.toml` | Codex preset block for `~/.codex/config.toml` |
+| `commands/harness-skills/` | Generated `/webmaster` skill files for Agent Skills harnesses |
 | `.opencode/commands/webmaster.md` | Generated OpenCode `/webmaster` command |
 | `skills/website-master/` | Orchestrator: 13-stage flow, gates, approvals, progress file |
 | `skills/website-master/stages.md` | Stage map, phase map, `docs/progress.md` format |
@@ -282,19 +305,29 @@ reading order there.
 
 Skill paths and `--agent` ids below were checked against the
 [skills CLI supported-agents table](https://github.com/vercel-labs/skills/blob/main/docs/agents.md)
-on 2026-11-10. Installation into each agent was not run in this repository, so
-every row still says "not tested". Several agents share the project directory
+on 2026-11-21. Installation was exercised only for OpenCode, so other rows
+still say "not tested". Several agents share the project directory
 `.agents/skills/`; the CLI links it into the agent-specific location.
 
 | Agent | `--agent` id | Project path | Global path | Tested |
 |-------|--------------|--------------|-------------|--------|
 | Claude Code | `claude-code` | `.claude/skills/` | `~/.claude/skills/` | not tested |
-| OpenCode | `opencode` | `.agents/skills/` | `~/.config/opencode/skills/` | not tested |
+| OpenCode | `opencode` | `.agents/skills/` | `~/.config/opencode/skills/` | tested 2026-11-21 |
 | Codex | `codex` | `.agents/skills/` | `~/.agents/skills/` | not tested |
 | Cursor | `cursor` | `.agents/skills/` | `~/.cursor/skills/` | not tested |
 | GitHub Copilot | `github-copilot` | `.agents/skills/` | `~/.copilot/skills/` | not tested |
 | Windsurf | `windsurf` | `.windsurf/skills/` | `~/.codeium/windsurf/skills/` | not tested |
 | Gemini CLI | `gemini-cli` | `.agents/skills/` | `~/.gemini/skills/` | not tested |
+| DeepSeek Harness | `universal` | `.agents/skills/` | `~/.agents/skills/` | not tested |
+| Qwen Code | `qwen-code` | `.qwen/skills/` | `~/.qwen/skills/` | not tested |
+| Kimi Code CLI | `kimi-code-cli` | `.agents/skills/` | `~/.agents/skills/` | not tested |
+| MiniMax Code | `minimax-code` | `.minimax/skills/` | `~/.minimax/skills/` | not tested |
+| Grok Build | `grok` | `.grok/skills/` | `~/.grok/skills/` | not tested |
+| Kiro CLI | `kiro-cli` | `.kiro/skills/` | `~/.kiro/skills/` | not tested |
+| Cline | `cline` | `.agents/skills/` | `~/.agents/skills/` | not tested |
+| Roo Code | `roo` | `.roo/skills/` | `~/.roo/skills/` | not tested |
+| Continue | `continue` | `.continue/skills/` | `~/.continue/skills/` | not tested |
+| OpenHands | `openhands` | `.openhands/skills/` | `~/.openhands/skills/` | not tested |
 | Generic / other | n/a | `AGENTS.md` at repo root | n/a | not tested |
 
 Anything marked "not tested" should be treated as a starting point: check your
