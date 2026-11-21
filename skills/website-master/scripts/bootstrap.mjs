@@ -108,7 +108,7 @@ async function exists(path) {
 // The skills CLI runs from npx, so its own version is pinned too: an unpinned
 // CLI could change its arguments between runs. Checked with
 // `npm view skills version` on 2026-11-10.
-const SKILLS_CLI_VERSION = "1.7.6";
+const SKILLS_CLI_VERSION = "1.9.0";
 const INSTALL_TIMEOUT_MS = 300_000;
 
 async function hasSkill(dir, name) {

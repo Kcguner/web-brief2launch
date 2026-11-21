@@ -317,10 +317,10 @@ Hepsi bağımlılıksız, Node.js >= 18, `--help` çıktısı `Usage:` satırı 
   opencode, codex, cursor, github-copilot, windsurf, gemini-cli). Tek agent
   otomatik seçilir; sıfır/çoklu agent `--agent <id>` ister. Paylaşılan
   `.agents/skills` klasörü yerine agent config dizinleri kullanılır.
-- Skills CLI sürümü de pinlidir: `skills@1.7.6`, `npx -y` ile. Kurulum zaman
+- Skills CLI sürümü de pinlidir: `skills@1.9.0`, `npx -y` ile. Kurulum zaman
   aşımı 300 s; zaman aşımında süreç grubu öldürülür (SIGTERM, 5 s sonra
   SIGKILL yedeği), böylece npx'in torun süreci yetim kalmaz.
-- Her paket için tek `npx skills@1.7.6 add repo@pin -a <agent> -y --skill <ad> ...`
+- Her paket için tek `npx skills@1.9.0 add repo@pin -a <agent> -y --skill <ad> ...`
   komutu çalıştırılır; skill adları tek tek verilir, wildcard yok. Komut
   çalıştırılmadan önce yazdırılır.
 - Agent config'i düzenlemez, hook kurmaz, opsiyonel paketi kurmaz.
