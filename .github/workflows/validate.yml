@@ -21,3 +21,5 @@ jobs:
           node-version: ${{ matrix.node }}
       - name: Repository self-check (includes script fixture regressions)
         run: node scripts/validate.mjs
+      - name: Harness command files in sync
+        run: node scripts/generate-commands.mjs --check

@@ -36,23 +36,36 @@ Then open `AGENTS.md` (or your agent's instruction file) and follow the reading
 order there. For agents that do not auto-load skills, point the agent at this
 folder and start with `skills/website-master/SKILL.md`.
 
-### One-command setup in OpenCode
+### One-command setup in any harness
 
 This repository ships `/webmaster`, a command that installs all seven skills and
-the pinned dependency packs into the project you are working in. Copy it once
-into your global OpenCode commands folder:
+the pinned dependency packs into the project you are working in. One prompt body
+lives in `commands/webmaster.md`; the harness-specific files are generated from
+it. Each file names its own harness, so the command knows which skills CLI id
+and skills directory to use. If the prompt is pasted into a chat without a
+harness name, it falls back to detecting the harness from project markers.
 
-```bash
-mkdir -p ~/.config/opencode/commands
-cp .opencode/commands/webmaster.md ~/.config/opencode/commands/webmaster.md
-```
+Copy the file for your harness once:
 
-OpenCode reloads command files automatically. In the target project, run
-`/webmaster`. It detects the target agent, installs this skill set, runs the
-pinned bootstrap with approval for this one-shot setup, adds the project entry
-pointer, and reports the verification output. Pass an explicit agent id as an
-argument if detection is ambiguous, for example `/webmaster opencode`. The
-optional `impeccable` pack is never installed by this command.
+| Harness | Copy from this repo | Copy to |
+|---------|---------------------|---------|
+| OpenCode | `.opencode/commands/webmaster.md` | `~/.config/opencode/commands/` |
+| Claude Code | `.claude/commands/webmaster.md` | `~/.claude/commands/` |
+| Cursor | `.cursor/commands/webmaster.md` | `~/.cursor/commands/` or project `.cursor/commands/` |
+| Gemini CLI | `.gemini/commands/webmaster.toml` | `~/.gemini/commands/` |
+| GitHub Copilot (IDE) | `.github/prompts/webmaster.prompt.md` | project `.github/prompts/` |
+| Windsurf / Cascade | `.windsurf/workflows/webmaster.md` | `~/.codeium/windsurf/global_workflows/` or project `.windsurf/workflows/` |
+| Codex | `commands/webmaster.codex.toml` | paste the block into `~/.codex/config.toml` |
+
+OpenCode, Claude Code, Cursor and Gemini CLI reload command files automatically.
+In the target project, run `/webmaster` (Codex: `/presets`, slot `1`). It
+installs this skill set, runs the pinned bootstrap with approval for this
+one-shot setup, adds the project entry pointer, and reports the verification
+output. The optional `impeccable` pack is never installed by this command.
+
+After editing `commands/webmaster.md`, regenerate the command files with
+`node scripts/generate-commands.mjs`. Use `node scripts/generate-commands.mjs
+--check` to fail when a generated file has drifted.
 
 ### What the bootstrap does
 
@@ -146,7 +159,10 @@ superpowers version this set references.
 
 | Path | Role |
 |------|------|
-| `.opencode/commands/webmaster.md` | OpenCode `/webmaster`: installs the whole set and pinned dependencies into the current project |
+| `commands/webmaster.md` | Canonical `/webmaster` prompt body for every harness |
+| `scripts/generate-commands.mjs` | Generates and checks the harness-specific command files |
+| `commands/webmaster.codex.toml` | Codex preset block for `~/.codex/config.toml` |
+| `.opencode/commands/webmaster.md` | Generated OpenCode `/webmaster` command |
 | `skills/website-master/` | Orchestrator: 13-stage flow, gates, approvals, progress file |
 | `skills/website-master/stages.md` | Stage map, phase map, `docs/progress.md` format |
 | `skills/website-master/reference.md` | Stage checklists for IA and backend/data |
